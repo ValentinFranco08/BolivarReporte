@@ -1,26 +1,269 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─────────────────────────────────────────────────────────────────────────────
+   HOJA DE MENSURA — sistema visual de Reporte Bolívar
+
+   Bolívar está dibujada como una grilla de parcelas numeradas. La interfaz
+   toma prestado el idioma de las planchas catastrales: grilla visible, tinta
+   ferroprusiato sobre papel vegetal, cajetín con los datos de la hoja,
+   cifras de parcela en monoespaciada. Idioma técnico y descriptivo: describe
+   una situación, no imputa una infracción.
+
+   Una sola escena de luz: papel claro. El uso real es a la intemperie, a
+   pleno sol, y ese es el caso difícil; no hay variante oscura a medio
+   mantener.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-chivo-mono), ui-monospace, monospace;
+
+  /* Papel vegetal: el soporte de la hoja. */
+  --color-papel: #f4f1e8;
+  --color-papel-alto: #fbfaf5;
+  --color-papel-hondo: #e7e2d3;
+
+  /* Tinta ferroprusiato: el trazo de la mensura. */
+  --color-tinta-50: #eef2fa;
+  --color-tinta-100: #d9e2f4;
+  --color-tinta-200: #b3c5e6;
+  --color-tinta-300: #7f9dd1;
+  --color-tinta-400: #4a72b8;
+  --color-tinta-500: #1d4ea0;
+  --color-tinta-600: #0b3c8c;
+  --color-tinta-700: #082f6e;
+  --color-tinta-800: #062350;
+  --color-tinta-900: #041736;
+
+  /* Grafito: la anotación a lápiz. */
+  --color-grafito-100: #dcdcd4;
+  --color-grafito-200: #c3c3b9;
+  --color-grafito-400: #8a8a80;
+  --color-grafito-500: #6d6d64;
+  --color-grafito-600: #55554e;
+  --color-grafito-900: #101418;
+
+  /* Sello: sólo para marcar, nunca para alarmar. */
+  --color-sello-100: #f7dcd7;
+  --color-sello-500: #c8402c;
+  --color-sello-600: #a83322;
+  --color-sello-700: #86281a;
+
+  /* Verificado: el visto del expediente cerrado. */
+  --color-visto-100: #d7e8dc;
+  --color-visto-600: #2f6b45;
+  --color-visto-700: #234f34;
+
+  /* Ámbar de anotación al margen. */
+  --color-margen-100: #f6e6c8;
+  --color-margen-600: #8a6316;
+
+  /* Paso de la grilla de mensura. */
+  --espaciado-grilla: 28px;
+
+  --radius-hoja: 2px;
+
+  --shadow-lamina: 0 1px 2px rgba(16, 20, 24, 0.06), 0 8px 20px -6px rgba(16, 20, 24, 0.14);
+  --shadow-lamina-alta: 0 2px 4px rgba(16, 20, 24, 0.08), 0 22px 44px -12px rgba(16, 20, 24, 0.22);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─── Superficies del navegador ───────────────────────────────────────────── */
+
+html {
+  color-scheme: light;
+  -webkit-tap-highlight-color: rgba(11, 60, 140, 0.16);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-papel);
+  color: var(--color-grafito-900);
+}
+
+::selection {
+  background-color: var(--color-tinta-600);
+  color: var(--color-papel-alto);
+}
+
+* {
+  caret-color: var(--color-tinta-600);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-tinta-600);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+/* Cifras alineadas en columna: números de parcela, fechas, coordenadas. */
+:where(table, .cifras) {
+  font-variant-numeric: tabular-nums;
+}
+
+@supports (scrollbar-color: auto) {
+  html {
+    scrollbar-color: var(--color-grafito-200) var(--color-papel);
+    scrollbar-width: thin;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── La grilla de mensura ────────────────────────────────────────────────── */
+
+/* El armazón visible de la hoja. Es un instrumento de medición, no una
+   textura decorativa: las parcelas se apoyan en este paso. */
+@utility mensura {
+  background-image:
+    linear-gradient(to right, rgba(11, 60, 140, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 60, 140, 0.07) 1px, transparent 1px);
+  background-size: var(--espaciado-grilla) var(--espaciado-grilla);
+  background-position: center top;
+}
+
+/* Grilla mayor: cada diez pasos, el trazo se refuerza como en la plancha. */
+@utility mensura-mayor {
+  background-image:
+    linear-gradient(to right, rgba(11, 60, 140, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 60, 140, 0.14) 1px, transparent 1px),
+    linear-gradient(to right, rgba(11, 60, 140, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 60, 140, 0.06) 1px, transparent 1px);
+  background-size:
+    calc(var(--espaciado-grilla) * 5) calc(var(--espaciado-grilla) * 5),
+    calc(var(--espaciado-grilla) * 5) calc(var(--espaciado-grilla) * 5),
+    var(--espaciado-grilla) var(--espaciado-grilla),
+    var(--espaciado-grilla) var(--espaciado-grilla);
+  background-position: center top;
+}
+
+/* Lámina: la foto o el bloque pegado sobre la hoja. */
+@utility lamina {
+  background-color: var(--color-papel-alto);
+  border: 1px solid var(--color-grafito-100);
+  box-shadow: var(--shadow-lamina);
+}
+
+/* Rótulo de campo del cajetín. */
+@utility rotulo {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-grafito-500);
+}
+
+/* Cifra de parcela: el número que identifica el reporte. */
+@utility cifra {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Título de hoja: Archivo expandida, la voz condensada-ancha de las planchas.
+   Compromete el eje wdth de la variable; sin esto el eje viaja sin usarse. */
+@utility titulo-hoja {
+  font-stretch: 118%;
+}
+
+/* ─── Movimiento autorizado ───────────────────────────────────────────────── */
+
+/* El único momento de movimiento del producto: la hoja se despliega una vez,
+   de arriba hacia abajo, como el plano que se abre en la mano. Parte de un
+   estado ya visible para que nada dependa del final de la animación. */
+@keyframes desplegar {
+  from {
+    opacity: 0.001;
+    transform: translateY(-6px);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@utility desplegar {
+  animation: desplegar 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sellar {
+  from {
+    opacity: 0.001;
+    transform: scale(1.12) rotate(-3deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(-1.5deg);
+  }
+}
+
+@utility sellar {
+  animation: sellar 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Leaflet dentro del mundo de la hoja ─────────────────────────────────── */
+
+.leaflet-container {
+  background-color: var(--color-papel-hondo);
+  font-family: var(--font-sans);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-hoja);
+  background-color: var(--color-papel-alto);
+  border: 1px solid var(--color-grafito-100);
+  box-shadow: var(--shadow-lamina-alta);
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  width: 15rem !important;
+}
+
+.leaflet-popup-tip {
+  background-color: var(--color-papel-alto);
+  border: 1px solid var(--color-grafito-100);
+}
+
+.leaflet-popup-close-button {
+  color: var(--color-grafito-500) !important;
+  padding: 0.5rem 0.5rem 0 0 !important;
+}
+
+.leaflet-bar,
+.leaflet-control-attribution {
+  border-radius: var(--radius-hoja) !important;
+  border: 1px solid var(--color-grafito-100) !important;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.leaflet-bar a {
+  color: var(--color-tinta-700) !important;
+  background-color: var(--color-papel-alto) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: var(--color-tinta-50) !important;
 }
