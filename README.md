@@ -102,7 +102,7 @@ bolivar-responde/
 - Python 3.11+
 - Node.js 20+
 - PostgreSQL
-- (Opcional) Mac con Apple Silicon para aceleración MPS
+
 
 ### Backend
 ```bash
