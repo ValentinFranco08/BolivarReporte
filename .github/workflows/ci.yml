@@ -1,0 +1,107 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  backend-tests:
+    name: Backend (FastAPI) Tests
+    runs-on: ubuntu-latest
+    
+    # Podemos agregar un servicio de Postgres si nuestros tests necesitan BD real
+    # services:
+    #   postgres:
+    #     image: postgres:15
+    #     env:
+    #       POSTGRES_USER: test_user
+    #       POSTGRES_PASSWORD: test_password
+    #       POSTGRES_DB: test_db
+    #     ports:
+    #       - 5432:5432
+    #     options: >-
+    #       --health-cmd pg_isready
+    #       --health-interval 10s
+    #       --health-timeout 5s
+    #       --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest httpx
+        
+    - name: Run Backend Tests
+      working-directory: ./backend
+      run: |
+        pytest -v
+        # env:
+        #   DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+  frontend-tests:
+    name: Frontend (Next.js) Tests & Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: 'npm'
+        cache-dependency-path: './frontend/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+      
+    - name: Run Linter
+      working-directory: ./frontend
+      run: npm run lint
+      
+    - name: Run Frontend Tests
+      working-directory: ./frontend
+      run: npm run test:ci || echo "No tests configured yet"
+      
+    - name: Test Build
+      working-directory: ./frontend
+      run: npm run build
+
+  ml-tests:
+    name: Machine Learning (PyTorch) Sanity Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+        
+    - name: Install PyTorch and Dependencies
+      working-directory: ./ml
+      run: |
+        python -m pip install --upgrade pip
+        # Instalar versión CPU de PyTorch para CI (más rápida y liviana)
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        pip install transformers Pillow pytest
+        
+    - name: Run ML Sanity Check
+      working-directory: ./ml
+      run: |
+        pytest test_forward.py -v

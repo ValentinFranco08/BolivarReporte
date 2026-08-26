@@ -11,7 +11,7 @@ import uuid
 from .ai_service import ai_service
 from . import models, schemas, crud, auth, database
 
-models.Base.metadata.create_all(bind=database.engine)
+# models.Base.metadata.create_all(bind=database.engine) # Alembic se encarga de esto o usar un script separado.
 
 app = FastAPI(
     title="Reporte Bolívar — API",

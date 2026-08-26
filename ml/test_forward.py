@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ml.models.multimodal import BolivarMultimodalModel
 from transformers import RobertaTokenizer
 
-def test():
+def test_forward_pass():
     print("Iniciando prueba de Forward Pass de la Arquitectura Multimodal...")
     
     # 1. Inicializar modelo

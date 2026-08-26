@@ -4,3 +4,7 @@ pydantic
 sqlalchemy
 alembic
 psycopg2-binary
+
+# Testing
+pytest==8.0.2
+httpx==0.27.0
