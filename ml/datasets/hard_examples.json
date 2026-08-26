@@ -1,0 +1,11 @@
+[
+    {
+        "id": 9,
+        "image_file": "b5691fe1-cae7-466d-86e7-e01c82cad2ef.jpg",
+        "text_description": "",
+        "predicted_label": "calle_deteriorada",
+        "ground_truth_label": "perdida_agua",
+        "confidence_at_prediction": 0.5912,
+        "reviewed_by_user_id": 1
+    }
+]

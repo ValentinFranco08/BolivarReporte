@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-25T12:00:00-03:00",
+  "title": "Design System: Reporte Bolívar",
+  "extensions": {
+    "colorMeta": {
+      "papel": {
+        "role": "neutral",
+        "displayName": "Papel vegetal",
+        "canonical": "#f4f1e8",
+        "tonalRamp": ["#101418", "#55554e", "#6d6d64", "#8a8a80", "#c3c3b9", "#dcdcd4", "#e7e2d3", "#f4f1e8", "#fbfaf5"]
+      },
+      "papel-alto": {
+        "role": "neutral",
+        "displayName": "Papel alto",
+        "canonical": "#fbfaf5",
+        "purpose": "Superficie de contenido: láminas, cajetines, campos, marcas."
+      },
+      "papel-hondo": {
+        "role": "neutral",
+        "displayName": "Papel hondo",
+        "canonical": "#e7e2d3",
+        "purpose": "Lo hundido: fotos sin imagen, contenedor del mapa, hover callado."
+      },
+      "tinta-600": {
+        "role": "primary",
+        "displayName": "Tinta ferroprusiato",
+        "canonical": "#0b3c8c",
+        "tonalRamp": ["#041736", "#062350", "#082f6e", "#0b3c8c", "#1d4ea0", "#4a72b8", "#7f9dd1", "#b3c5e6", "#d9e2f4", "#eef2fa"]
+      },
+      "tinta-700": {
+        "role": "primary",
+        "displayName": "Tinta profunda",
+        "canonical": "#082f6e",
+        "purpose": "Texto azulado, borde del botón sólido, hover del primario."
+      },
+      "tinta-500": {
+        "role": "primary",
+        "displayName": "Tinta de prioridad media",
+        "canonical": "#1d4ea0",
+        "purpose": "Prioridad media (trazo y chincheta), barra de confianza."
+      },
+      "grafito-900": {
+        "role": "neutral",
+        "displayName": "Grafito de texto",
+        "canonical": "#101418",
+        "purpose": "Cuerpo titular de la hoja."
+      },
+      "grafito-600": {
+        "role": "neutral",
+        "displayName": "Grafito de anotación",
+        "canonical": "#55554e",
+        "purpose": "Cuerpo secundario; 5.8:1 sobre papel-hondo."
+      },
+      "grafito-500": {
+        "role": "neutral",
+        "displayName": "Grafito de rótulo",
+        "canonical": "#6d6d64",
+        "purpose": "Piso de texto secundario (4.6:1 sobre papel): rótulos, legal, cifras atenuadas."
+      },
+      "sello-500": {
+        "role": "secondary",
+        "displayName": "Sello",
+        "canonical": "#c8402c",
+        "tonalRamp": ["#86281a", "#a83322", "#c8402c", "#d97a5e", "#e9a892", "#f7dcd7"],
+        "purpose": "Sólo marca: corregir, crítica, requiere información, error de campo. Nunca alarma."
+      },
+      "visto-600": {
+        "role": "secondary",
+        "displayName": "Visto de expediente",
+        "canonical": "#2f6b45",
+        "tonalRamp": ["#234f34", "#2f6b45", "#4a8a61", "#79b291", "#a9d1b8", "#d7e8dc"],
+        "purpose": "Lo cerrado y confirmado: resuelto, constancia Registrado, avisos de éxito."
+      },
+      "margen-600": {
+        "role": "secondary",
+        "displayName": "Ámbar de margen",
+        "canonical": "#8a6316",
+        "tonalRamp": ["#5c4109", "#8a6316", "#b0842a", "#cba655", "#e2c88e", "#f6e6c8"],
+        "purpose": "Anotación al margen: prioridad alta, pendiente, atención, confianza baja."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Título de hoja",
+        "purpose": "La voz display de la portada; Archivo estirada a wdth 118% (titulo-hoja). Una voz por producto."
+      },
+      "headline": {
+        "displayName": "Titular de superficie",
+        "purpose": "h1 de cada superficie interior."
+      },
+      "title": {
+        "displayName": "Título de cajetín",
+        "purpose": "Títulos de sección, tarjeta y diálogo."
+      },
+      "body": {
+        "displayName": "Cuerpo de hoja",
+        "purpose": "Prosa en Archivo; párrafos medidos a 42–68ch."
+      },
+      "label": {
+        "displayName": "Rótulo de campo",
+        "purpose": "Etiqueta de cajetín en Chivo Mono uppercase; encabezados de tabla y marcas."
+      },
+      "cifra": {
+        "displayName": "Cifra de parcela",
+        "purpose": "Medición en Chivo Mono tabular: números de parcela, fechas, coordenadas, conteos."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lamina",
+        "value": "0 1px 2px rgba(16, 20, 24, 0.06), 0 8px 20px -6px rgba(16, 20, 24, 0.14)",
+        "purpose": "Reposo de lo pegado a la hoja: fotos, tarjetas de sesión, cajetín flotante del plano."
+      },
+      {
+        "name": "lamina-alta",
+        "value": "0 2px 4px rgba(16, 20, 24, 0.08), 0 22px 44px -12px rgba(16, 20, 24, 0.22)",
+        "purpose": "Lo elevado sobre la hoja: diálogo de gestión y popups de Leaflet."
+      },
+      {
+        "name": "velo-dialogo",
+        "value": "background: rgba(16, 20, 24, 0.55)",
+        "purpose": "El único oscurecimiento del sistema; siempre detrás de un diálogo."
+      }
+    ],
+    "motion": [
+      {
+        "name": "desplegar",
+        "value": "desplegar 620ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "purpose": "La hoja se despliega de arriba hacia abajo (clip-path + translateY). Momento autorizado nº 1; parte de un estado ya visible."
+      },
+      {
+        "name": "sellar",
+        "value": "sellar 420ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "purpose": "La constancia se sella: entra con scale(1.12) rotate(-3deg) y queda rotada -1.5deg. Momento autorizado nº 2."
+      },
+      {
+        "name": "compas",
+        "value": "spin 1s linear infinite (motion-safe)",
+        "purpose": "El único spinner del sistema: compás girando mientras se mide. Estado de trabajo, no un momento narrativo."
+      },
+      {
+        "name": "transicion-color",
+        "value": "transition-colors 150ms",
+        "purpose": "Única transición de estado en reposo; sin movimiento ni sombra."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px", "purpose": "Padding de hoja, columnas de grilla, columnas de tabla." },
+      { "name": "md", "value": "768px", "purpose": "Grilla de parcelas a 2 columnas en el listado." },
+      { "name": "lg", "value": "1024px", "purpose": "Dos columnas cajetín+grilla; tabla muestra dirección." },
+      { "name": "xl", "value": "1280px", "purpose": "Listado a 3 columnas; tabla muestra confianza." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón tinta",
+      "kind": "button",
+      "refersTo": "boton-tinta",
+      "description": "El único relleno sólido de la superficie; acción principal, 56px para el pulgar en la calle.",
+      "html": "<button class=\"ds-boton-tinta\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2a1.5 1.5 0 0 0 1.25-.67l.9-1.35A1.5 1.5 0 0 1 10.1 4h3.8a1.5 1.5 0 0 1 1.25.98l.9 1.35A1.5 1.5 0 0 0 17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-9Z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></svg>Reportar algo</button>",
+      "css": ".ds-boton-tinta { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 0 28px; border: 1px solid #082f6e; border-radius: 2px; background: #0b3c8c; color: #fbfaf5; font-family: Archivo, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 150ms; } .ds-boton-tinta svg { width: 20px; height: 20px; } .ds-boton-tinta:hover { background: #082f6e; } .ds-boton-tinta:active { background: #062350; } .ds-boton-tinta:focus-visible { outline: 2px solid #0b3c8c; outline-offset: 2px; } .ds-boton-tinta:disabled { background: #c3c3b9; border-color: #c3c3b9; color: #6d6d64; cursor: not-allowed; }"
+    },
+    {
+      "name": "Botón contorno",
+      "kind": "button",
+      "refersTo": "boton-contorno",
+      "description": "Acción secundaria de tinta: papel alto con borde de tinta clara.",
+      "html": "<button class=\"ds-boton-contorno\">Ver el plano</button>",
+      "css": ".ds-boton-contorno { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; padding: 0 28px; border: 1px solid #b3c5e6; border-radius: 2px; background: #fbfaf5; color: #082f6e; font-family: Archivo, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background-color 150ms, border-color 150ms; } .ds-boton-contorno:hover { background: #eef2fa; border-color: #7f9dd1; } .ds-boton-contorno:focus-visible { outline: 2px solid #0b3c8c; outline-offset: 2px; } .ds-boton-contorno:disabled { color: #6d6d64; border-color: #dcdcd4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Botón sello",
+      "kind": "button",
+      "refersTo": "boton-sello",
+      "description": "Marca una corrección o cierre; el sello nunca alarma.",
+      "html": "<button class=\"ds-boton-sello\">No, corregir</button>",
+      "css": ".ds-boton-sello { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 12px; border: 1px solid rgba(200, 64, 44, 0.4); border-radius: 2px; background: #fbfaf5; color: #86281a; font-family: Archivo, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; cursor: pointer; transition: background-color 150ms; } .ds-boton-sello:hover { background: #f7dcd7; } .ds-boton-sello:focus-visible { outline: 2px solid #0b3c8c; outline-offset: 2px; } .ds-boton-sello:disabled { color: #6d6d64; border-color: #dcdcd4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "campo-texto",
+      "description": "Campo de cajetín: rótulo mono asociado por id, foco en tinta, error en sello.",
+      "html": "<div class=\"ds-campo\"><label class=\"ds-rotulo\" for=\"ds-demo\">Contanos algo más (opcional)</label><input class=\"ds-input\" id=\"ds-demo\" type=\"text\" placeholder=\"Ej: está hace una semana y ya se llevó dos ruedas.\"><p class=\"ds-ayuda\">Una línea alcanza. Ayuda a clasificar mejor la situación.</p></div>",
+      "css": ".ds-rotulo { display: block; margin-bottom: 6px; font-family: 'Chivo Mono', ui-monospace, monospace; font-size: 0.6875rem; line-height: 1.2; letter-spacing: 0.1em; text-transform: uppercase; color: #6d6d64; } .ds-input { width: 100%; padding: 12px 14px; border: 1px solid #c3c3b9; border-radius: 2px; background: #fbfaf5; color: #101418; font-family: Archivo, ui-sans-serif, system-ui, sans-serif; font-size: 0.9375rem; transition: border-color 150ms; } .ds-input::placeholder { color: #6d6d64; } .ds-input:hover { border-color: #8a8a80; } .ds-input:focus { border-color: #0b3c8c; outline: 2px solid #0b3c8c; outline-offset: 2px; } .ds-input[aria-invalid=\"true\"] { border-color: #c8402c; } .ds-ayuda { margin-top: 6px; font-size: 0.8125rem; color: #6d6d64; }"
+    },
+    {
+      "name": "Marca de estado",
+      "kind": "chip",
+      "refersTo": "marca-estado",
+      "description": "El estado siempre con palabra; el color del expediente acompaña.",
+      "html": "<span class=\"ds-marca ds-marca-clasificado\">Clasificado</span>",
+      "css": ".ds-marca { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid; border-radius: 2px; font-family: 'Chivo Mono', ui-monospace, monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; } .ds-marca-clasificado { border-color: #7f9dd1; background: #eef2fa; color: #082f6e; } .ds-marca-resuelto { border-color: rgba(47, 107, 69, 0.4); background: #d7e8dc; color: #234f34; } .ds-marca-pendiente { border-color: rgba(138, 99, 22, 0.4); background: #f6e6c8; color: #8a6316; } .ds-marca-requiere-informacion { border-color: rgba(200, 64, 44, 0.4); background: #f7dcd7; color: #86281a; } .ds-marca-reportado { border-color: #8a8a80; background: #fbfaf5; color: #55554e; }"
+    },
+    {
+      "name": "Marca de prioridad",
+      "kind": "custom",
+      "refersTo": "marca-prioridad",
+      "description": "Prioridad como escala de mensura que se cuenta: 1 a 4 trazos llenos.",
+      "html": "<span class=\"ds-prioridad\"><span class=\"ds-trazos\" aria-hidden=\"true\"><i class=\"lleno\"></i><i class=\"lleno\"></i><i class=\"lleno\"></i><i></i></span><span class=\"ds-prioridad-texto\">Alta</span></span>",
+      "css": ".ds-prioridad { display: inline-flex; align-items: center; gap: 8px; } .ds-trazos { display: inline-flex; align-items: flex-end; gap: 3px; } .ds-trazos i { display: block; width: 3px; border-radius: 1px; background: #dcdcd4; } .ds-trazos i:nth-child(1) { height: 8px; } .ds-trazos i:nth-child(2) { height: 11px; } .ds-trazos i:nth-child(3) { height: 14px; } .ds-trazos i:nth-child(4) { height: 17px; } .ds-trazos i.lleno { background: #8a6316; } .ds-prioridad-texto { font-family: 'Chivo Mono', ui-monospace, monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: #55554e; }"
+    },
+    {
+      "name": "Lámina",
+      "kind": "card",
+      "refersTo": "lamina",
+      "description": "El bloque pegado sobre la hoja: papel alto, borde hairline, sombra suave de 2px.",
+      "html": "<div class=\"ds-lamina\"><p class=\"ds-rotulo\">Constancia de reporte</p><p class=\"ds-cifra-grande\">0042</p><p class=\"ds-lamina-texto\">Quedó anotado en la hoja de reportes.</p></div>",
+      "css": ".ds-lamina { max-width: 24rem; padding: 20px 24px 24px; border: 1px solid #dcdcd4; border-radius: 2px; background: #fbfaf5; box-shadow: 0 1px 2px rgba(16, 20, 24, 0.06), 0 8px 20px -6px rgba(16, 20, 24, 0.14); } .ds-cifra-grande { margin-top: 6px; font-family: 'Chivo Mono', ui-monospace, monospace; font-size: 1.875rem; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: #101418; } .ds-lamina-texto { margin-top: 10px; font-family: Archivo, ui-sans-serif, system-ui, sans-serif; font-size: 0.9375rem; line-height: 1.625; color: #55554e; } .ds-lamina .ds-rotulo { margin-bottom: 0; }"
+    },
+    {
+      "name": "Cifra de parcela",
+      "kind": "custom",
+      "refersTo": "cifra",
+      "description": "El número real del reporte, tabular, con ceros a la izquierda atenuados.",
+      "html": "<span class=\"ds-cifra\"><span class=\"ds-ceros\" aria-hidden=\"true\">00</span>42</span>",
+      "css": ".ds-cifra { font-family: 'Chivo Mono', ui-monospace, monospace; font-size: 0.8125rem; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: #101418; } .ds-ceros { color: #6d6d64; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Hoja de Mensura",
+    "overview": "Reporte Bolívar se ve como una hoja de mensura catastral. Bolívar ya está dibujada como una grilla de parcelas numeradas; cada reporte es una parcela con número propio sobre esa hoja. La interfaz toma prestado el idioma de las planchas del IGN: papel vegetal con grilla visible, tinta ferroprusiato para el trazo, grafito para la anotación a lápiz, cajetines de datos en lugar de heroes, cifras de parcela en monoespaciada, fotos como láminas pegadas sobre el papel. Es un idioma técnico y descriptivo a propósito: la hoja describe una situación, nunca imputa una infracción — el descargo legal es texto obligatorio de la hoja, no un adorno.\n\nHay una sola escena de luz: papel claro, siempre. El uso real es a la intemperie, a pleno sol, con un pulgar: por eso el texto secundario tiene piso de contraste 4.5:1 (grafito-500 sobre papel), los controles miden y el estado nunca vive sólo en el color — siempre hay palabra, y la prioridad es una escala de trazos que se cuenta (1 a 4). El sistema rechaza explícitamente el portal municipal celeste con hero y tres tarjetas, el dashboard oscuro de IA, el glass, los gradientes decorativos y los kickers sobre el h1.\n\nLa inteligencia artificial es invisible para el vecino: ni confianza, ni top-3, ni nombres de arquitectura en las superficies públicas. Toda la maquinaria (confianza, feedback de reentrenamiento, revisión humana) vive exclusivamente en /dashboard. El movimiento tiene dos momentos autorizados — la hoja que se despliega y la constancia que se sella — con curva exponencial de salida y prefers-reduced-motion respetado de forma global. La voz tipográfica es Archivo (Omnibus-Type, Buenos Aires) con su eje de ancho estirado para el display de la hoja, y Chivo Mono reservada a la medición.",
+    "keyCharacteristics": [
+      "Papel vegetal como único soporte; una escena de luz, sin dark mode (color-scheme: light, themeColor papel).",
+      "Grilla de mensura visible como instrumento real: paso de 28px, trazo mayor cada 5 pasos.",
+      "Cajetín de datos (rótulo + cifra) como apertura de superficie; nunca hero con kicker.",
+      "Estado, prioridad y área siempre con palabra; prioridad como escala contable de 1 a 4 trazos.",
+      "Sello rojizo (#c8402c) sólo para marcar (corregir, crítica, cerrar, error de campo); nunca alarma.",
+      "Chivo Mono mide (cifras, coordenadas, rótulos, marcas); Archivo escribe todo lo demás.",
+      "Radios de 2px, esquinas a escuadra, marcas de registro; sin glass, sin gradientes, sin sombras duras.",
+      "Superficies del navegador tematizadas: selection, caret, focus, scrollbar y tabular-nums en la tinta de la hoja."
+    ],
+    "rules": [
+      { "name": "La Regla de la Escena Única", "body": "Una sola escena de luz: papel claro, color-scheme: light, themeColor #f4f1e8. No existe variante oscura ni a medio mantener; el caso difícil es la calle a pleno sol.", "section": "colors" },
+      { "name": "La Regla del Sello", "body": "El sello (#c8402c) sólo marca: corregir, crítica, requerir información, error de campo. Nunca encabeza una superficie ni hace de rojo de denuncia — el producto describe situaciones, no acusa vecinos.", "section": "colors" },
+      { "name": "La Regla de la Tinta de Trabajo", "body": "La tinta es el único relleno sólido generoso de la interfaz; todo lo demás es papel. La parquedad de la tinta es lo que hace que el obturador azul se encuentre de un vistazo al sol.", "section": "colors" },
+      { "name": "La Regla de la Monoespaciada que Mide", "body": "Chivo Mono sólo aparece donde hay medición: cifras de parcela, fechas, coordenadas, rótulos de campo, marcas de estado/prioridad, encabezados de tabla, referencias del plano. Si el texto se lee como una frase, va en Archivo.", "section": "typography" },
+      { "name": "La Regla del Eje Ancho", "body": "El eje wdth de Archivo existe para el display de la hoja (font-stretch: 118%). El cuerpo de texto viaja a ancho normal; estirar tipografía corriente diluye la voz de portada.", "section": "typography" },
+      { "name": "La Regla del Cajetín", "body": "Toda superficie abre con datos en cajetín (rótulo + cifra reales) o con un renglón de encabezado con botón de vuelta. Nunca un hero con kicker sobre el h1: los rótulos son etiquetas de campo dentro de cajetines.", "section": "layout" },
+      { "name": "La Regla del Papel de Medir", "body": "La grilla de mensura es un instrumento, no una textura: parcelas, renglones y tablas se apoyan en trazos dibujados de 1px (gap-px sobre grafito-200). Si un bloque no se apoya en la grilla, es una tarjeta suelta y no pertenece a esta hoja.", "section": "layout" },
+      { "name": "La Regla de la Hoja Plana", "body": "El papel no proyecta sombra. La sombra es la prueba de que algo está pegado (lámina) o flotando (diálogo, cajetín del plano) — y aparece junto a un borde hairline como máximo acompañante, nunca junto a otra sombra.", "section": "elevation" },
+      { "name": "La Regla de la Escuadra", "body": "Nada se redondea más de 2px y los trazos terminan a escuadra. Radio grande, terminal redondeado y blob son de otro mundo; la hoja se construye con regla y compás.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do abrir cada superficie con cajetín o renglón de encabezado; los rótulos son etiquetas de campo dentro de cajetines, con cifras reales.",
+      "Do escribir estado, prioridad y área siempre con palabra; prioridad como escala contable de 1 a 4 trazos.",
+      "Do usar Chivo Mono sólo para medir (cifras, coordenadas, rótulos, marcas, encabezados de tabla) con tabular-nums.",
+      "Do mantener un solo botón de tinta sólida por superficie como acción principal, de 56px en CTAs de la calle.",
+      "Do tematizar las superficies del navegador en la tinta: selection, caret, focus-visible (outline 2px tinta-600 offset 2px), scrollbar thin grafito-200/papel, tap-highlight.",
+      "Do limitar el movimiento a los dos momentos (desplegar 620ms, sellar 420ms, cubic-bezier(0.16,1,0.3,1)) más el compás de trabajo; siempre motion-safe: y el corte global de prefers-reduced-motion.",
+      "Do incluir el descargo legal textual en toda superficie de reporte, y mensajes de error que nombran el problema concreto.",
+      "Do mantener la maquinaria de IA (confianza, feedback, revisión) únicamente en /dashboard; al vecino se le muestra la deducción, nunca el modelo.",
+      "Do operar por teclado de punta a punta: diálogo con foco atrapado, filas con botón real (\"Gestionar\" + sr-only), campos con label asociada."
+    ],
+    "donts": [
+      "Don't crear una variante oscura: una sola escena de luz, el papel claro es el sistema.",
+      "Don't usar glass, blur de fondo, gradientes de color o gradient text; los únicos linear-gradient del sistema son los trazos de 1px de la grilla de mensura.",
+      "Don't poner kickers/eyebrows sobre el h1, ni heroes con tres tarjetas.",
+      "Don't usar el sello (#c8402c) como alarma o denuncia; sólo marca acciones y estados puntuales.",
+      "Don't usar emojis como iconografía: siempre iconos dibujados del set propio.",
+      "Don't componer cuerpo de texto en monoespaciada, ni estirar Archivo fuera del display de hoja.",
+      "Don't apilar sombras ni usar offset duro; una elevación por elemento, y la hoja plana por defecto.",
+      "Don't codificar información sólo en color, ni bajar del piso de contraste de grafito-500 para texto pequeño.",
+      "Don't mostrar confianza, top-k o arquitectura del modelo en superficies públicas."
+    ]
+  }
+}

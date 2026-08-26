@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bolivar_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: bolivar_user
+      POSTGRES_PASSWORD: bolivar_password
+      POSTGRES_DB: bolivar_responde
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
