@@ -156,4 +156,4 @@ python3 ml/training/train_multimodal.py
 
 ---
 
-*Proyecto académico de Deep Learning Multimodal — Universidad Nacional del Centro de la Provincia de Buenos Aires.*
+*Proyecto académico de Deep Learning Multimodal 
