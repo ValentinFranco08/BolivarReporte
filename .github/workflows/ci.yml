@@ -46,7 +46,7 @@ jobs:
     - name: Run Backend Tests
       working-directory: ./backend
       run: |
-        pytest -v
+        PYTHONPATH=. pytest -v
         # env:
         #   DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
 
