@@ -49,3 +49,24 @@ def test_get_categories(client):
     response = client.get("/api/categories")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+
+def test_predict_image_and_text(client):
+    from PIL import Image
+    import io
+    img = Image.new('RGB', (100, 100), color='blue')
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG')
+    buf.seek(0)
+    
+    response = client.post(
+        "/api/ai/predict",
+        files={"file": ("test.jpg", buf.getvalue(), "image/jpeg")},
+        data={"text": "pozo y bache roto en asfalto"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "predictions" in data
+    assert "classification" in data
+    assert "image_path" in data
+

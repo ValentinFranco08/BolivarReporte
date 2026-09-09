@@ -45,8 +45,13 @@ def get_device():
     return torch.device("cpu")
 
 
+from .llm_categorizer import suggest_category
+
+SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.70"))
+
+
 class BolivarAI:
-    """Servicio singleton de inferencia multimodal."""
+    """Servicio singleton de inferencia multimodal y búsqueda semántica."""
 
     def __init__(self):
         self.device = get_device()
@@ -101,43 +106,92 @@ class BolivarAI:
         except Exception as e:
             print(f"❌ Error cargando modelo: {e}")
 
-    def predict(self, image_bytes: bytes, text: str) -> dict:
-        """
-        Realiza predicción multimodal (imagen + texto).
-
-        Returns:
-            {
-                "predictions": [{"label": str, "score": float}, ...],
-                "model_version": str
-            }
-        """
+    def extract_embedding(self, image_bytes: bytes, text: str) -> Optional[list]:
+        """Extrae el embedding multimodal L2-normalizado de 768 dimensiones."""
         if not self.ready:
-            return {
-                "error": "El modelo de IA no está disponible. Entrenamiento pendiente.",
-                "predictions": [],
-                "model_version": "none"
-            }
-
+            return None
         try:
-            # 1. Procesar imagen
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            pixel_values = self.transform(image).unsqueeze(0).to(self.device)  # (1, 3, 224, 224)
+            pixel_values = self.transform(image).unsqueeze(0).to(self.device)
 
-            # 2. Tokenizar texto
             encoding = self.tokenizer(
-                text,
+                text or "reporte urbano",
                 padding="max_length",
                 truncation=True,
                 max_length=MAX_TOKEN_LENGTH,
                 return_tensors="pt",
             )
-            input_ids      = encoding["input_ids"].to(self.device)        # (1, L)
-            attention_mask = encoding["attention_mask"].to(self.device)    # (1, L)
+            input_ids = encoding["input_ids"].to(self.device)
+            attention_mask = encoding["attention_mask"].to(self.device)
 
-            # 3. Inferencia
             with torch.no_grad():
-                logits = self.model(pixel_values, input_ids, attention_mask)
-                probs  = F.softmax(logits, dim=-1)[0]
+                _, embeddings = self.model(pixel_values, input_ids, attention_mask, return_embeddings=True)
+                return embeddings[0].cpu().tolist()
+        except Exception as e:
+            print(f"Error extrayendo embedding: {e}")
+            return None
+
+    def predict(
+        self,
+        image_bytes: bytes,
+        text: str,
+        category_centroids: Optional[list] = None
+    ) -> dict:
+        """
+        Realiza predicción multimodal e integra detección de categorías dinámicas
+        a través de búsqueda de similitud coseno con centroides.
+
+        category_centroids: lista opcional de dicts:
+            [{"name": str, "area": str, "centroid": list[float]}, ...]
+        """
+        description = text.strip() if text else ""
+
+        # Si el modelo no está cargado, operamos en modo generativo/fallback sin romper la app
+        if not self.ready:
+            suggested = suggest_category(description)
+            mock_predictions = [{"label": suggested["name"], "score": suggested["confidence"]}]
+            classification = classify_label(suggested["name"], suggested["confidence"])
+            classification["category"] = suggested["area"].lower().replace(" ", "_")
+            classification["label"] = suggested["name"]
+
+            return {
+                "predictions": mock_predictions,
+                "classification": classification,
+                "embedding": None,
+                "is_novel_category": True,
+                "similarity_score": 0.0,
+                "suggested_category": suggested["name"],
+                "suggested_label": suggested["label"],
+                "suggested_area": suggested["area"],
+                "suggested_description": suggested["description"],
+                "model_version": "fallback-heuristico",
+            }
+
+        try:
+            # 1. Procesar imagen
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            pixel_values = self.transform(image).unsqueeze(0).to(self.device)
+
+            # 2. Tokenizar texto
+            encoding = self.tokenizer(
+                description or "reporte urbano",
+                padding="max_length",
+                truncation=True,
+                max_length=MAX_TOKEN_LENGTH,
+                return_tensors="pt",
+            )
+            input_ids = encoding["input_ids"].to(self.device)
+            attention_mask = encoding["attention_mask"].to(self.device)
+
+            # 3. Inferencia con extracción de embeddings
+            with torch.no_grad():
+                logits, embeddings_tensor = self.model(
+                    pixel_values, input_ids, attention_mask, return_embeddings=True
+                )
+                probs = F.softmax(logits, dim=-1)[0]
+
+            query_embedding = embeddings_tensor[0] # (768,) normalizado L2
+            query_list = query_embedding.cpu().tolist()
 
             k = min(3, probs.numel())
             top_scores, top_indices = torch.topk(probs, k=k)
@@ -150,15 +204,65 @@ class BolivarAI:
             top = predictions[0] if predictions else {"label": "desconocido", "score": 0.0}
             classification = classify_label(top["label"], top["score"])
 
-            return {
+            # 4. Búsqueda Vectorial contra Centroides Dinámicos
+            best_sim = -1.0
+            best_cat = None
+
+            if category_centroids:
+                for cat in category_centroids:
+                    c_vec = cat.get("centroid")
+                    if c_vec and len(c_vec) == len(query_list):
+                        # Similitud Coseno (producto punto de vectores normalizados)
+                        sim = sum(q * c for q, c in zip(query_list, c_vec))
+                        if sim > best_sim:
+                            best_sim = sim
+                            best_cat = cat
+
+            # Decisión de Novedad (¿Es una problemática nueva o encaja con algo conocido?)
+            # Se considera nueva si:
+            # - Si hay centroides y la máxima similitud es < SIMILARITY_THRESHOLD
+            # - O si no hay centroides pero la confianza de la red base es baja (< 0.50)
+            is_novel = False
+            if category_centroids and len(category_centroids) > 0:
+                is_novel = best_sim < SIMILARITY_THRESHOLD
+            elif top["score"] < 0.50:
+                is_novel = True
+
+            res = {
                 "predictions": predictions,
                 "classification": classification,
+                "embedding": query_list,
+                "is_novel_category": is_novel,
+                "similarity_score": round(best_sim if best_sim >= 0 else top["score"], 4),
                 "model_version": self.model_version,
             }
 
+            if is_novel:
+                # Disparar propuesta de nueva categoría vía LLM / Heurística
+                suggested = suggest_category(description)
+                res["suggested_category"] = suggested["name"]
+                res["suggested_label"] = suggested["label"]
+                res["suggested_area"] = suggested["area"]
+                res["suggested_description"] = suggested["description"]
+                
+                # Modificamos la clasificación para que refleje la sugerencia
+                res["classification"]["label"] = suggested["name"]
+                res["classification"]["category"] = suggested["area"].lower().replace(" ", "_")
+                res["classification"]["type"] = suggested["name"]
+                res["classification"]["requires_review"] = True
+            elif best_cat:
+                res["matched_category"] = best_cat["name"]
+
+            return res
+
         except Exception as e:
-            return {"error": str(e), "predictions": [], "model_version": self.model_version}
+            return {
+                "error": str(e),
+                "predictions": [],
+                "model_version": self.model_version
+            }
 
 
 # Instancia singleton
 ai_service = BolivarAI()
+

@@ -20,43 +20,78 @@ interface FichaClasificacionProps {
   /** Corrección elegida por el vecino, si la hubo. */
   correccion: string | null;
   onCorregir: (categoria: string | null) => void;
+  /** Indica si la IA detectó que es una problemática no contemplada en el catálogo base. */
+  isNovelCategory?: boolean;
+  suggestedLabel?: string;
+  suggestedArea?: string;
+  suggestedDescription?: string;
 }
 
 export function FichaClasificacion({
   etiqueta,
   correccion,
   onCorregir,
+  isNovelCategory,
+  suggestedLabel,
+  suggestedArea,
+  suggestedDescription,
 }: FichaClasificacionProps) {
   const [editando, setEditando] = useState(false);
+  const [personalizado, setPersonalizado] = useState('');
 
   const vigente = correccion ?? etiqueta;
   const categoria = buscarCategoria(vigente);
-  const nombre = etiquetaLegible(vigente);
+  
+  // Nombre a mostrar: si es novedad y no está corregido, usamos suggestedLabel
+  const nombre = correccion
+    ? (buscarCategoria(correccion)?.label ?? etiquetaLegible(correccion))
+    : isNovelCategory && suggestedLabel
+    ? suggestedLabel
+    : etiquetaLegible(vigente);
+
+  const areaVigente = correccion
+    ? (buscarCategoria(correccion)?.area ?? null)
+    : (categoria?.area ?? (suggestedArea as any) ?? null);
+
+  const descripcionVigente = correccion
+    ? buscarCategoria(correccion)?.description
+    : (categoria?.description ?? suggestedDescription);
 
   return (
     <section className="rounded-hoja border border-grafito-200 bg-papel-alto">
       {/* Renglón del cajetín: lo que se dedujo. */}
       <div className="border-b border-grafito-200 px-5 py-5">
-        <p className="rotulo">
-          {correccion ? 'Categoría corregida por vos' : 'Registramos esta situación como'}
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="rotulo">
+            {correccion
+              ? 'Categoría corregida por vos'
+              : isNovelCategory
+              ? 'Nueva problemática identificada por IA'
+              : 'Registramos esta situación como'}
+          </p>
+          {isNovelCategory && !correccion ? (
+            <span className="inline-flex items-center gap-1.5 rounded-hoja border border-amber-300 bg-amber-50 px-2.5 py-0.5 font-mono text-[0.6875rem] font-medium uppercase tracking-wider text-amber-800">
+              Categoría Nueva
+            </span>
+          ) : null}
+        </div>
 
         <h2 className="mt-2 text-[1.75rem] font-bold leading-tight tracking-[-0.02em] text-grafito-900">
           {nombre}
         </h2>
 
         <div className="mt-3 flex flex-wrap items-center gap-2.5">
-          <MarcaArea area={categoria?.area ?? null} />
+          <MarcaArea area={areaVigente} />
           {correccion ? (
             <span className="text-[0.8125rem] text-grafito-500">
-              El sistema había propuesto {etiquetaLegible(etiqueta)}.
+              El sistema había propuesto {isNovelCategory && suggestedLabel ? suggestedLabel : etiquetaLegible(etiqueta)}.
             </span>
           ) : null}
         </div>
 
-        {categoria ? (
+        {descripcionVigente ? (
           <p className="mt-3 max-w-[52ch] text-[0.875rem] leading-relaxed text-grafito-600">
-            {categoria.description}.
+            {descripcionVigente}.
           </p>
         ) : null}
       </div>

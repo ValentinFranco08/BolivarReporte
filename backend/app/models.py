@@ -47,6 +47,9 @@ class Category(Base):
     area = Column(String, nullable=False) # ej: "Infraestructura", "Animales"
     description = Column(String)
     active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=True) # False si es una categoría candidata/sugerida por IA
+    embedding_centroid = Column(Text, nullable=True) # Representación JSON de lista de 768 floats
+    sample_count = Column(Integer, default=1) # Cantidad de muestras que componen el centroide
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     reports = relationship("Report", back_populates="category")
@@ -64,6 +67,8 @@ class Report(Base):
     image_path = Column(String, nullable=False) # Path local por ahora
     status = Column(Enum(ReportStatus), default=ReportStatus.REPORTADO)
     priority = Column(Enum(ReportPriority), default=ReportPriority.MEDIUM)
+    is_novel_category = Column(Boolean, default=False) # True si el reporte inauguró una problemática nueva
+    embedding = Column(Text, nullable=True) # Vector multimodal del reporte para active learning y re-cálculo
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -107,6 +112,7 @@ class Feedback(Base):
     correct = Column(Boolean, nullable=False)
     correct_class = Column(String, nullable=True) # Si correct == False, cuál era la clase real
     reviewed_by = Column(Integer, ForeignKey("users.id"))
+    used_for_retraining = Column(Boolean, default=False) # Marca si ya fue consumido en un ciclo de reentrenamiento
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     prediction = relationship("AIPrediction", back_populates="feedback")

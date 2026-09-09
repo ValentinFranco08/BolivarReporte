@@ -22,6 +22,8 @@ export interface CategoriaAPI {
   name: string;
   area: string;
   description?: string | null;
+  is_verified?: boolean;
+  sample_count?: number;
 }
 
 export interface PrediccionAPI {
@@ -40,6 +42,7 @@ export interface Reporte {
   latitude: number | null;
   longitude: number | null;
   created_at: string;
+  is_novel_category?: boolean;
   category: CategoriaAPI | null;
   prediction: PrediccionAPI | null;
 }
@@ -66,6 +69,13 @@ export interface RespuestaPrediccion {
   classification?: Clasificacion;
   model_version: string;
   image_path: string;
+  embedding?: number[] | null;
+  is_novel_category?: boolean;
+  similarity_score?: number;
+  suggested_category?: string;
+  suggested_label?: string;
+  suggested_area?: string;
+  suggested_description?: string;
 }
 
 export interface Usuario {
@@ -192,6 +202,9 @@ export interface NuevoReporte {
   latitude: number | null;
   longitude: number | null;
   address: string | null;
+  is_novel_category?: boolean;
+  suggested_area?: string;
+  embedding?: number[] | null;
 }
 
 export function crearReporte(token: string, reporte: NuevoReporte): Promise<Reporte> {
@@ -224,6 +237,54 @@ export function enviarCorreccion(
     method: 'POST',
     headers: conAuth(token, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ correct: correcta, correct_class: correcta ? null : claseCorrecta }),
+  });
+}
+
+// ─── Gestión de Categorías (Panel Municipal) ──────────────────────────────────
+
+export interface CategoriaPendiente {
+  id: number;
+  name: string;
+  area: string;
+  description: string | null;
+  sample_count: number;
+  reports_count: number;
+  is_verified: boolean;
+  created_at: string | null;
+}
+
+export function listarCategoriasPendientes(token: string): Promise<CategoriaPendiente[]> {
+  return pedir<CategoriaPendiente[]>('/api/admin/categories/pending', {
+    headers: conAuth(token),
+    cache: 'no-store',
+  });
+}
+
+export function aprobarCategoria(
+  token: string,
+  id: number,
+  datos?: { name?: string; area?: string; description?: string },
+): Promise<CategoriaAPI> {
+  return pedir<CategoriaAPI>(`/api/admin/categories/${id}/approve`, {
+    method: 'POST',
+    headers: conAuth(token, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(datos ?? {}),
+  });
+}
+
+export function fusionarCategorias(
+  token: string,
+  sourceId: number,
+  target: { id?: number; name?: string },
+): Promise<{ status: string; message: string; target_id: number; new_sample_count: number }> {
+  return pedir('/api/admin/categories/merge', {
+    method: 'POST',
+    headers: conAuth(token, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      source_category_id: sourceId,
+      target_category_id: target.id,
+      target_category_name: target.name,
+    }),
   });
 }
 

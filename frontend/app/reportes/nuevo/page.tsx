@@ -147,6 +147,9 @@ export default function NuevoReporte() {
         latitude: lat,
         longitude: lng,
         address: direccion,
+        is_novel_category: resultado.is_novel_category,
+        suggested_area: resultado.suggested_area,
+        embedding: resultado.embedding,
       });
       setRegistrado(creado);
     } catch (e) {
@@ -330,6 +333,10 @@ export default function NuevoReporte() {
                       etiqueta={resultado.predictions[0].label}
                       correccion={correccion}
                       onCorregir={setCorreccion}
+                      isNovelCategory={resultado.is_novel_category}
+                      suggestedLabel={resultado.suggested_label}
+                      suggestedArea={resultado.suggested_area}
+                      suggestedDescription={resultado.suggested_description}
                     />
 
                     <div className="rounded-hoja border border-grafito-200 bg-papel-alto px-5 py-5">

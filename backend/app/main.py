@@ -1,5 +1,6 @@
 import os
 import shutil
+import json
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,13 +12,58 @@ import uuid
 from .ai_service import ai_service
 from . import models, schemas, crud, auth, database
 
-# models.Base.metadata.create_all(bind=database.engine) # Alembic se encarga de esto o usar un script separado.
-
 app = FastAPI(
     title="Reporte Bolívar — API",
     description="API para la plataforma inteligente de participación ciudadana de Bolívar.",
     version="2.0.0"
 )
+
+@app.on_event("startup")
+def on_startup():
+    try:
+        models.Base.metadata.create_all(bind=database.engine)
+        db = database.SessionLocal()
+        try:
+            count = db.query(models.Category).count()
+            if count == 0:
+                from ml.taxonomy import SEED_CATEGORIES
+                print(f"🌱 Sembrando {len(SEED_CATEGORIES)} categorías iniciales...")
+                for cat_data in SEED_CATEGORIES:
+                    cat = models.Category(
+                        name=cat_data["name"],
+                        area=cat_data["area"],
+                        description=cat_data.get("description", ""),
+                        active=True,
+                        is_verified=True,
+                        sample_count=1
+                    )
+                    db.add(cat)
+                db.commit()
+                print("✅ Categorías iniciales sembradas.")
+
+            # Sembrar usuarios por defecto si no existen
+            if not db.query(models.User).filter_by(email="admin@bolivar.gob.ar").first():
+                admin_user = models.User(
+                    name="Administrador Municipal",
+                    email="admin@bolivar.gob.ar",
+                    password_hash=auth.get_password_hash("admin123"),
+                    role=models.UserRole.ADMIN,
+                )
+                db.add(admin_user)
+            if not db.query(models.User).filter_by(email="vecino@bolivar.gob.ar").first():
+                vecino_user = models.User(
+                    name="Vecino Bolívar",
+                    email="vecino@bolivar.gob.ar",
+                    password_hash=auth.get_password_hash("vecino123"),
+                    role=models.UserRole.CITIZEN,
+                )
+                db.add(vecino_user)
+            db.commit()
+            print("✅ Usuarios iniciales verificados (admin@bolivar.gob.ar / vecino@bolivar.gob.ar).")
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"⚠️ Advertencia inicializando base de datos en startup: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -92,6 +138,7 @@ def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
 async def predict(
     file: UploadFile = File(...),
     text: str = Form(default=""),
+    db: Session = Depends(database.get_db),
 ):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="El archivo debe ser una imagen.")
@@ -105,7 +152,27 @@ async def predict(
         f.write(image_bytes)
         
     description = text.strip() if text else ""
-    result = ai_service.predict(image_bytes, description)
+
+    # Extraer centroides vectoriales de las categorías existentes en la base de datos
+    centroids = []
+    try:
+        categories = crud.get_categories(db)
+        for cat in categories:
+            if cat.embedding_centroid:
+                try:
+                    c_vec = json.loads(cat.embedding_centroid)
+                    centroids.append({
+                        "id": cat.id,
+                        "name": cat.name,
+                        "area": cat.area,
+                        "centroid": c_vec
+                    })
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"⚠️ Advertencia al consultar centroides de categorías: {e}")
+
+    result = ai_service.predict(image_bytes, description, category_centroids=centroids)
 
     if "error" in result and not result.get("predictions"):
         raise HTTPException(status_code=503, detail=result["error"])
@@ -123,17 +190,35 @@ def create_report(
 ):
     # Obtener category_id a partir del corrected_class o predicted_class
     final_class = submission.corrected_class if submission.corrected_class else submission.predicted_class
+    
+    # Manejo de categorías dinámicas
     if not submission.category_id:
         cat = crud.get_category_by_name(db, final_class)
+        if not cat and submission.is_novel_category:
+            # Crear categoría nueva en estado 'no verificada' con su centroide inicial
+            cat = crud.create_or_get_novel_category(
+                db=db,
+                name=final_class,
+                area=submission.suggested_area or "Infraestructura",
+                description=submission.description,
+                embedding=submission.embedding
+            )
         if cat:
             submission.category_id = cat.id
+
+    # Actualización en Caliente (Online Memory):
+    # Si la categoría ya existe y tenemos el embedding del reporte, actualizamos el centroide de forma ponderada
+    if submission.category_id and submission.embedding:
+        crud.update_category_centroid(db, submission.category_id, submission.embedding)
 
     # Crear reporte
     report = crud.create_report(
         db=db,
         report=submission,
         image_path=submission.image_path,
-        user_id=current_user.id
+        user_id=current_user.id,
+        is_novel_category=submission.is_novel_category or False,
+        embedding=submission.embedding
     )
     
     # Crear prediccion vinculada
@@ -142,28 +227,20 @@ def create_report(
         ai_pred = schemas.AIPredictionBase(
             predicted_class=submission.predicted_class,
             confidence=submission.confidence,
-            model_version_id=model_version.id
+            model_version_id=model_version.id,
+            is_novel_category=submission.is_novel_category,
         )
         saved_prediction = crud.create_ai_prediction(db, prediction=ai_pred, report_id=report.id)
 
-        # Si el usuario corrigió la categoría en el frontend, guardamos el feedback negativo automáticamente
-        if submission.corrected_class and submission.corrected_class != submission.predicted_class:
-            crud.create_or_update_feedback(
-                db=db,
-                prediction_id=saved_prediction.id,
-                correct=False,
-                correct_class=submission.corrected_class,
-                reviewer_id=current_user.id
-            )
-        else:
-            # Si el usuario aceptó la categoría, es feedback positivo implicito
-            crud.create_or_update_feedback(
-                db=db,
-                prediction_id=saved_prediction.id,
-                correct=True,
-                correct_class=None,
-                reviewer_id=current_user.id
-            )
+        # Si el usuario corrigió la categoría en el frontend o es categoría novedosa, guardamos el feedback para active learning
+        was_corrected = bool(submission.corrected_class and submission.corrected_class != submission.predicted_class)
+        crud.create_or_update_feedback(
+            db=db,
+            prediction_id=saved_prediction.id,
+            correct=not was_corrected,
+            correct_class=submission.corrected_class if was_corrected else None,
+            reviewer_id=current_user.id
+        )
     
     # Refrescar para cargar las relationships
     db.refresh(report)
@@ -248,3 +325,78 @@ def export_feedback_dataset(
         "data": export,
         "note": "Estos pares imagen+etiqueta pueden agregarse al dataset para reentrenamiento supervisado."
     }
+
+
+# --- GESTIÓN DE CATEGORÍAS CANDIDATAS Y CONSOLIDACIÓN ---
+
+@app.get("/api/admin/categories/pending")
+def get_pending_categories(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Retorna categorías propuestas por la IA que esperan validación o consolidación
+    por el equipo municipal, incluyendo el recuento de reportes agrupados en cada una.
+    """
+    pending = crud.get_pending_categories(db)
+    results = []
+    for cat in pending:
+        count = db.query(models.Report).filter(models.Report.category_id == cat.id).count()
+        results.append({
+            "id": cat.id,
+            "name": cat.name,
+            "area": cat.area,
+            "description": cat.description,
+            "sample_count": cat.sample_count,
+            "reports_count": count,
+            "is_verified": cat.is_verified,
+            "created_at": cat.created_at.isoformat() if cat.created_at else None,
+        })
+    return results
+
+
+@app.post("/api/admin/categories/{category_id}/approve", response_model=schemas.CategoryResponse)
+def approve_category(
+    category_id: int,
+    req: schemas.CategoryApproveRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Aprueba oficialmente una categoría propuesta por la IA."""
+    cat = crud.approve_category(
+        db,
+        category_id=category_id,
+        name=req.name,
+        area=req.area,
+        description=req.description
+    )
+    if not cat:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    return cat
+
+
+@app.post("/api/admin/categories/merge")
+def merge_categories(
+    req: schemas.CategoryMergeRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Fusiona dos categorías (ej: unifica 'crater' en 'bache').
+    Reasigna los reportes y combina los centroides vectoriales.
+    """
+    target = crud.merge_categories(
+        db,
+        source_category_id=req.source_category_id,
+        target_category_id=req.target_category_id,
+        target_category_name=req.target_category_name
+    )
+    if not target:
+        raise HTTPException(status_code=400, detail="Error fusionando categorías. Verifique los IDs o nombres.")
+    return {
+        "status": "ok",
+        "message": f"Categoría fusionada exitosamente en '{target.name}'",
+        "target_id": target.id,
+        "new_sample_count": target.sample_count
+    }
+

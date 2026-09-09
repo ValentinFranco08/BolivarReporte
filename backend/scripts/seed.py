@@ -36,6 +36,23 @@ def seed():
             )
             db.add(model_v1)
 
+        print("Poblando usuarios demo...")
+        from app import auth, models
+        if not db.query(models.User).filter_by(email="admin@bolivar.gob.ar").first():
+            db.add(models.User(
+                name="Administrador Municipal",
+                email="admin@bolivar.gob.ar",
+                password_hash=auth.get_password_hash("admin123"),
+                role=models.UserRole.ADMIN,
+            ))
+        if not db.query(models.User).filter_by(email="vecino@bolivar.gob.ar").first():
+            db.add(models.User(
+                name="Vecino Bolívar",
+                email="vecino@bolivar.gob.ar",
+                password_hash=auth.get_password_hash("vecino123"),
+                role=models.UserRole.CITIZEN,
+            ))
+
         db.commit()
         print("Seed completado exitosamente.")
     except Exception as e:

@@ -19,8 +19,12 @@ import {
   enviarCorreccion,
   leerToken,
   listarReportes,
+  listarCategoriasPendientes,
+  aprobarCategoria,
+  fusionarCategorias,
   urlDeImagen,
   type Reporte,
+  type CategoriaPendiente,
 } from '@/lib/api';
 import {
   AREAS,
@@ -30,6 +34,7 @@ import {
   PRIORIDADES,
   PRIORIDAD_LABEL,
   etiquetaLegible,
+  buscarCategoria,
   type Estado,
   type Prioridad,
 } from '@/lib/taxonomy';
@@ -48,9 +53,15 @@ export default function Panel() {
   // obligaba a fijar estado de forma sincrónica y encadenaba renders.
   const [token] = useState<string | null>(() => leerToken());
   const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [pendientes, setPendientes] = useState<CategoriaPendiente[]>([]);
+  const [pestana, setPestana] = useState<'reportes' | 'categorias'>('reportes');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
   const [abierto, setAbierto] = useState<Reporte | null>(null);
+  const [fusionandoCat, setFusionandoCat] = useState<CategoriaPendiente | null>(null);
+  const [destinoMerge, setDestinoMerge] = useState<string>(CATEGORIAS[0].name);
+  const [accionCargando, setAccionCargando] = useState(false);
 
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroArea, setFiltroArea] = useState('todas');
@@ -76,6 +87,13 @@ export default function Panel() {
       .finally(() => {
         if (vivo) setCargando(false);
       });
+
+    listarCategoriasPendientes(token)
+      .then((data) => {
+        if (vivo) setPendientes(data);
+      })
+      .catch(() => {});
+
     return () => {
       vivo = false;
     };
@@ -85,6 +103,39 @@ export default function Panel() {
     setReportes((prev) => prev.map((r) => (r.id === actualizado.id ? actualizado : r)));
     setAbierto(actualizado);
   }, []);
+
+  const alAprobarCategoria = async (id: number) => {
+    if (!token) return;
+    setAccionCargando(true);
+    try {
+      await aprobarCategoria(token, id);
+      setPendientes((prev) => prev.filter((c) => c.id !== id));
+      setMensajeExito('Categoría aprobada oficialmente en el sistema.');
+      setTimeout(() => setMensajeExito(null), 4000);
+    } catch (err: any) {
+      setError(err instanceof ErrorAPI ? err.message : 'Error al aprobar categoría');
+    } finally {
+      setAccionCargando(false);
+    }
+  };
+
+  const alConfirmarFusion = async () => {
+    if (!token || !fusionandoCat) return;
+    setAccionCargando(true);
+    try {
+      await fusionarCategorias(token, fusionandoCat.id, { name: destinoMerge });
+      setPendientes((prev) => prev.filter((c) => c.id !== fusionandoCat.id));
+      setMensajeExito(`Categoría '${fusionandoCat.name}' fusionada exitosamente en '${destinoMerge}'.`);
+      setFusionandoCat(null);
+      setTimeout(() => setMensajeExito(null), 4000);
+      const r = await listarReportes();
+      setReportes(r);
+    } catch (err: any) {
+      setError(err instanceof ErrorAPI ? err.message : 'Error al fusionar categorías');
+    } finally {
+      setAccionCargando(false);
+    }
+  };
 
   const salir = () => {
     borrarToken();
@@ -165,196 +216,336 @@ export default function Panel() {
           <Cifra rotulo="Resueltos" valor={resumen.resueltos} />
           <Cifra rotulo="Críticos" valor={resumen.criticos} alerta={resumen.criticos > 0} />
         </dl>
-
-        {/* Filtros */}
-        <div className="mt-7 grid grid-cols-1 gap-3 rounded-hoja border border-grafito-200 bg-papel-alto p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <label htmlFor="busqueda" className="rotulo mb-1.5 block">
-              Buscar
-            </label>
-            <div className="relative">
-              <Icono
-                nombre="lupa"
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-grafito-500"
-              />
-              <input
-                id="busqueda"
-                type="search"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Número, dirección, descripción…"
-                className="w-full rounded-hoja border border-grafito-200 bg-papel-alto py-3 pl-9 pr-3 text-[0.9375rem] text-grafito-900 placeholder:text-grafito-500 transition-colors hover:border-grafito-400 focus:border-tinta-600"
-              />
-            </div>
+        {mensajeExito ? (
+          <div className="mt-4 rounded-hoja border border-visto-600/30 bg-visto-100 p-3.5 text-sm font-medium text-visto-700">
+            {mensajeExito}
           </div>
+        ) : null}
 
-          <CampoSelect
-            etiqueta="Estado"
-            value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
-            opciones={[
-              { valor: 'todos', texto: 'Todos los estados' },
-              ...ESTADOS.map((s) => ({ valor: s, texto: ESTADO_LABEL[s] })),
-            ]}
-          />
-
-          <CampoSelect
-            etiqueta="Área"
-            value={filtroArea}
-            onChange={(e) => setFiltroArea(e.target.value)}
-            opciones={[
-              { valor: 'todas', texto: 'Todas las áreas' },
-              ...AREAS.map((a) => ({ valor: a, texto: a })),
-            ]}
-          />
-
-          <CampoSelect
-            etiqueta="Prioridad"
-            value={filtroPrioridad}
-            onChange={(e) => setFiltroPrioridad(e.target.value)}
-            opciones={[
-              { valor: 'todas', texto: 'Todas las prioridades' },
-              ...PRIORIDADES.map((p) => ({ valor: p, texto: PRIORIDAD_LABEL[p] })),
-            ]}
-          />
+        {/* Selector de Solapas */}
+        <div className="mt-6 flex items-center gap-2 border-b border-grafito-200 pb-3">
+          <button
+            type="button"
+            onClick={() => setPestana('reportes')}
+            className={`inline-flex items-center gap-2 rounded-hoja px-4 py-2 text-sm font-semibold transition-colors ${
+              pestana === 'reportes'
+                ? 'bg-tinta-600 text-papel-alto'
+                : 'border border-grafito-200 bg-papel-alto text-grafito-600 hover:bg-tinta-50'
+            }`}
+          >
+            <Icono nombre="hoja" className="size-4" />
+            Cola de Reportes ({reportes.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setPestana('categorias')}
+            className={`inline-flex items-center gap-2 rounded-hoja px-4 py-2 text-sm font-semibold transition-colors ${
+              pestana === 'categorias'
+                ? 'bg-tinta-600 text-papel-alto'
+                : 'border border-grafito-200 bg-papel-alto text-grafito-600 hover:bg-tinta-50'
+            }`}
+          >
+            <Icono nombre="compas" className="size-4" />
+            Categorías Propuestas por IA
+            {pendientes.length > 0 ? (
+              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[0.6875rem] font-bold text-white">
+                {pendientes.length}
+              </span>
+            ) : null}
+          </button>
         </div>
 
-        {/* Tabla */}
-        <div className="mt-5">
-          {cargando ? (
-            <div
-              role="status"
-              className="flex items-center justify-center gap-3 rounded-hoja border border-grafito-200 bg-papel-alto py-20 text-[0.9375rem] text-grafito-600"
-            >
-              <Compas className="text-tinta-600" />
-              Abriendo la cola…
+        {pestana === 'reportes' ? (
+          <>
+            {/* Filtros */}
+            <div className="mt-6 grid grid-cols-1 gap-3 rounded-hoja border border-grafito-200 bg-papel-alto p-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label htmlFor="busqueda" className="rotulo mb-1.5 block">
+                  Buscar
+                </label>
+                <div className="relative">
+                  <Icono
+                    nombre="lupa"
+                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-grafito-500"
+                  />
+                  <input
+                    id="busqueda"
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Número, dirección, descripción…"
+                    className="w-full rounded-hoja border border-grafito-200 bg-papel-alto py-3 pl-9 pr-3 text-[0.9375rem] text-grafito-900 placeholder:text-grafito-500 transition-colors hover:border-grafito-400 focus:border-tinta-600"
+                  />
+                </div>
+              </div>
+
+              <CampoSelect
+                etiqueta="Estado"
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+                opciones={[
+                  { valor: 'todos', texto: 'Todos los estados' },
+                  ...ESTADOS.map((s) => ({ valor: s, texto: ESTADO_LABEL[s] })),
+                ]}
+              />
+
+              <CampoSelect
+                etiqueta="Área"
+                value={filtroArea}
+                onChange={(e) => setFiltroArea(e.target.value)}
+                opciones={[
+                  { valor: 'todas', texto: 'Todas las áreas' },
+                  ...AREAS.map((a) => ({ valor: a, texto: a })),
+                ]}
+              />
+
+              <CampoSelect
+                etiqueta="Prioridad"
+                value={filtroPrioridad}
+                onChange={(e) => setFiltroPrioridad(e.target.value)}
+                opciones={[
+                  { valor: 'todas', texto: 'Todas las prioridades' },
+                  ...PRIORIDADES.map((p) => ({ valor: p, texto: PRIORIDAD_LABEL[p] })),
+                ]}
+              />
             </div>
-          ) : error ? (
-            <Aviso tono="error">{error}</Aviso>
-          ) : visibles.length === 0 ? (
-            <div className="rounded-hoja border border-grafito-200 bg-papel-alto px-6 py-16 text-center">
-              <p className="text-lg font-semibold text-grafito-900">
-                {reportes.length === 0 ? 'La cola está vacía' : 'Ningún reporte con esos filtros'}
-              </p>
-              <p className="mx-auto mt-2 max-w-[46ch] text-[0.9375rem] text-grafito-600">
-                {reportes.length === 0
-                  ? 'Todavía no entró ningún reporte de vecinos.'
-                  : 'Probá ampliando el estado, el área o la prioridad.'}
+
+            {/* Tabla */}
+            <div className="mt-5">
+              {cargando ? (
+                <div
+                  role="status"
+                  className="flex items-center justify-center gap-3 rounded-hoja border border-grafito-200 bg-papel-alto py-20 text-[0.9375rem] text-grafito-600"
+                >
+                  <Compas className="text-tinta-600" />
+                  Abriendo la cola…
+                </div>
+              ) : error ? (
+                <Aviso tono="error">{error}</Aviso>
+              ) : visibles.length === 0 ? (
+                <div className="rounded-hoja border border-grafito-200 bg-papel-alto px-6 py-16 text-center">
+                  <p className="text-lg font-semibold text-grafito-900">
+                    {reportes.length === 0 ? 'La cola está vacía' : 'Ningún reporte con esos filtros'}
+                  </p>
+                  <p className="mx-auto mt-2 max-w-[46ch] text-[0.9375rem] text-grafito-600">
+                    {reportes.length === 0
+                      ? 'Todavía no entró ningún reporte de vecinos.'
+                      : 'Probá ampliando el estado, el área o la prioridad.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="rotulo mb-2">
+                    {visibles.length} de {reportes.length} reportes
+                  </p>
+                  <div className="relative overflow-x-auto rounded-hoja border border-grafito-200 bg-papel-alto">
+                    <table className="w-full min-w-[54rem] text-left text-[0.875rem]">
+                      <caption className="sr-only">
+                        Reportes de vecinos con estado, prioridad y clasificación
+                      </caption>
+                      <thead>
+                        <tr className="border-b border-grafito-200 bg-papel">
+                          <Th>Nº</Th>
+                          <Th>Situación / Descripción</Th>
+                          <Th>Área</Th>
+                          <Th>Estado</Th>
+                          <Th>Prioridad</Th>
+                          <Th className="hidden sm:table-cell">Fecha</Th>
+                          <Th className="text-right">Acción</Th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-grafito-200">
+                        {visibles.map((r) => {
+                          const cat = buscarCategoria(r.category?.name);
+                          const area = r.category?.area ?? cat?.area ?? null;
+                          return (
+                            <tr
+                              key={r.id}
+                              className="transition-colors hover:bg-papel"
+                            >
+                              <td className="px-3 py-2.5">
+                                <NumeroParcela id={r.id} />
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <p className="font-semibold text-grafito-900">
+                                  {r.category ? etiquetaLegible(r.category.name) : 'Sin clasificar'}
+                                </p>
+                                <p className="max-w-[32ch] truncate text-[0.8125rem] text-grafito-600 sm:max-w-[44ch]">
+                                  {r.description || 'Sin descripción'}
+                                </p>
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <MarcaArea area={area} />
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <MarcaEstado estado={r.status} />
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <MarcaPrioridad prioridad={r.priority} conTexto={false} />
+                              </td>
+                              <td className="hidden px-3 py-2.5 sm:table-cell">
+                                <time
+                                  dateTime={r.created_at}
+                                  className="cifra text-[0.75rem] text-grafito-500"
+                                >
+                                  {new Date(r.created_at).toLocaleDateString('es-AR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: '2-digit',
+                                  })}
+                                </time>
+                              </td>
+                              <td className="px-3 py-2.5 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => setAbierto(r)}
+                                  className="inline-flex min-h-9 items-center rounded-hoja border border-tinta-200 bg-papel-alto px-3 text-[0.8125rem] font-medium text-tinta-700 transition-colors hover:border-tinta-300 hover:bg-tinta-50"
+                                >
+                                  Gestionar
+                                  <span className="sr-only"> el reporte número {r.id}</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          /* Solapa: Gestión de Categorías Propuestas por IA */
+          <div className="mt-6">
+            <div className="mb-4 rounded-hoja border border-tinta-200 bg-tinta-50/50 p-4">
+              <h2 className="text-sm font-semibold text-tinta-800">
+                Aprendizaje Continuo & Taxonomía Dinámica
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-grafito-600">
+                Cuando vecinos reportan problemáticas que la IA no encuentra en el catálogo histórico,
+                el sistema les asigna una categoría propuesta mediante búsqueda vectorial y LLM. Acá podés
+                aprobarlas formalmente o fusionarlas con categorías existentes para consolidar el catálogo municipal.
               </p>
             </div>
-          ) : (
-            <>
-              <p className="rotulo mb-2">
-                {visibles.length} de {reportes.length} reportes
-              </p>
-              {/* `relative` hace que los sr-only absolutos (y el clip del
-                  scroll) queden contenidos: sin él, los spans accesibles
-                  escapaban del contenedor y estiraban el documento. */}
-              <div className="relative overflow-x-auto rounded-hoja border border-grafito-200 bg-papel-alto">
-                <table className="w-full min-w-[54rem] text-left text-[0.875rem]">
-                  <caption className="sr-only">
-                    Reportes de vecinos con estado, prioridad y clasificación
-                  </caption>
+
+            {pendientes.length === 0 ? (
+              <div className="rounded-hoja border border-grafito-200 bg-papel-alto px-6 py-16 text-center">
+                <Icono nombre="visto" className="mx-auto size-8 text-visto-600" />
+                <p className="mt-3 text-lg font-semibold text-grafito-900">
+                  No hay categorías pendientes de revisión
+                </p>
+                <p className="mx-auto mt-1 max-w-[46ch] text-[0.9375rem] text-grafito-600">
+                  Todas las problemáticas actuales se encuentran agrupadas en categorías oficiales verificadas.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-hoja border border-grafito-200 bg-papel-alto">
+                <table className="w-full min-w-[50rem] text-left text-[0.875rem]">
                   <thead>
                     <tr className="border-b border-grafito-200 bg-papel">
-                      <Th>Nº</Th>
-                      <Th>Foto</Th>
-                      <Th>Categoría</Th>
-                      <Th className="hidden lg:table-cell">Dirección</Th>
-                      <Th className="hidden xl:table-cell">Confianza</Th>
-                      <Th>Estado</Th>
-                      <Th>Prioridad</Th>
-                      <Th className="hidden sm:table-cell">Fecha</Th>
-                      <th className="px-3 py-2.5">
-                        <span className="sr-only">Acciones</span>
-                      </th>
+                      <Th>Categoría Propuesta</Th>
+                      <Th>Área Sugerida</Th>
+                      <Th>Descripción</Th>
+                      <Th>Reportes Agrupados</Th>
+                      <Th className="text-right">Acciones</Th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-grafito-100">
-                    {visibles.map((r) => {
-                      const foto = urlDeImagen(r.image_path);
-                      const categoria = r.category?.name ?? r.prediction?.predicted_class ?? null;
-                      return (
-                        <tr key={r.id} className="transition-colors hover:bg-tinta-50/50">
-                          <td className="px-3 py-2.5">
-                            <NumeroParcela id={r.id} />
-                          </td>
-                          <td className="px-3 py-2.5">
-                            {foto ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={foto}
-                                alt=""
-                                loading="lazy"
-                                className="size-12 rounded-[1px] border border-grafito-100 object-cover"
-                              />
-                            ) : (
-                              <div className="mensura grid size-12 place-items-center rounded-[1px] border border-grafito-100">
-                                <span className="font-mono text-[0.5625rem] uppercase text-grafito-500">
-                                  s/f
-                                </span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <span className="block font-medium text-grafito-900">
-                              {etiquetaLegible(categoria)}
-                            </span>
-                            <span className="mt-1 block">
-                              <MarcaArea area={r.category?.area ?? null} />
-                            </span>
-                          </td>
-                          <td className="hidden max-w-[13rem] px-3 py-2.5 lg:table-cell">
-                            <span className="block truncate text-grafito-600" title={r.address ?? ''}>
-                              {r.address ?? '—'}
-                            </span>
-                          </td>
-                          <td className="hidden px-3 py-2.5 xl:table-cell">
-                            {r.prediction ? (
-                              <Confianza valor={r.prediction.confidence} />
-                            ) : (
-                              <span className="text-grafito-500">—</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <MarcaEstado estado={r.status} />
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <MarcaPrioridad prioridad={r.priority} conTexto={false} />
-                          </td>
-                          <td className="hidden px-3 py-2.5 sm:table-cell">
-                            <time
-                              dateTime={r.created_at}
-                              className="cifra text-[0.75rem] text-grafito-500"
-                            >
-                              {new Date(r.created_at).toLocaleDateString('es-AR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: '2-digit',
-                              })}
-                            </time>
-                          </td>
-                          <td className="px-3 py-2.5 text-right">
-                            {/* Un botón real: la fila entera ya no es un div clicable. */}
+                  <tbody className="divide-y divide-grafito-200">
+                    {pendientes.map((cat) => (
+                      <tr key={cat.id} className="transition-colors hover:bg-papel">
+                        <td className="px-3 py-3 font-semibold text-grafito-900">
+                          {etiquetaLegible(cat.name)}
+                          <span className="ml-2 font-mono text-[0.6875rem] text-grafito-500">
+                            ({cat.name})
+                          </span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <MarcaArea area={cat.area as any} />
+                        </td>
+                        <td className="px-3 py-3 text-xs text-grafito-600 max-w-[30ch] truncate">
+                          {cat.description || 'Sin descripción'}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-tinta-50 px-2.5 py-0.5 text-xs font-semibold text-tinta-700">
+                            {cat.reports_count} {cat.reports_count === 1 ? 'reporte' : 'reportes'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => setAbierto(r)}
-                              className="inline-flex min-h-9 items-center rounded-hoja border border-tinta-200 bg-papel-alto px-3 text-[0.8125rem] font-medium text-tinta-700 transition-colors hover:border-tinta-300 hover:bg-tinta-50"
+                              disabled={accionCargando}
+                              onClick={() => alAprobarCategoria(cat.id)}
+                              className="inline-flex min-h-8 items-center rounded-hoja bg-tinta-600 px-3 text-xs font-medium text-papel-alto transition-colors hover:bg-tinta-700 disabled:opacity-50"
                             >
-                              Gestionar
-                              <span className="sr-only"> el reporte número {r.id}</span>
+                              Aprobar oficial
                             </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            <button
+                              type="button"
+                              disabled={accionCargando}
+                              onClick={() => setFusionandoCat(cat)}
+                              className="inline-flex min-h-8 items-center rounded-hoja border border-grafito-300 bg-papel-alto px-3 text-xs font-medium text-grafito-700 transition-colors hover:border-grafito-400 hover:bg-papel disabled:opacity-50"
+                            >
+                              Fusionar con…
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Modal para Fusionar Categoría */}
+      {fusionandoCat ? (
+        <Dialogo
+          onCerrar={() => setFusionandoCat(null)}
+          titulo="Fusionar categoría candidata"
+          descripcion={`Los reportes acumulados de '${etiquetaLegible(fusionandoCat.name)}' se integrarán a la categoría oficial elegida, combinando sus vectores semánticos.`}
+        >
+          <div className="mt-4 space-y-4">
+            <div>
+              <label htmlFor="destino_merge" className="rotulo mb-1.5 block">
+                Seleccionar categoría oficial destino:
+              </label>
+              <select
+                id="destino_merge"
+                value={destinoMerge}
+                onChange={(e) => setDestinoMerge(e.target.value)}
+                className="w-full rounded-hoja border border-grafito-200 bg-papel-alto p-2.5 text-sm text-grafito-900 focus:border-tinta-600"
+              >
+                {CATEGORIAS.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.label} ({c.area})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-grafito-200 pt-4">
+              <button
+                type="button"
+                onClick={() => setFusionandoCat(null)}
+                className="rounded-hoja border border-grafito-200 px-3.5 py-2 text-xs font-medium text-grafito-600 hover:bg-papel"
+              >
+                Cancelar
+              </button>
+              <Boton
+                onClick={alConfirmarFusion}
+                cargando={accionCargando}
+                tamano="chico"
+              >
+                Confirmar Fusión
+              </Boton>
+            </div>
+          </div>
+        </Dialogo>
+      ) : null}
 
       {abierto && token ? (
         <FichaGestion

@@ -9,6 +9,8 @@ class CategoryBase(BaseModel):
     area: str
     description: Optional[str] = None
     active: bool = True
+    is_verified: bool = True
+    sample_count: int = 1
 
 class CategoryResponse(CategoryBase):
     id: int
@@ -17,6 +19,22 @@ class CategoryResponse(CategoryBase):
     class Config:
         orm_mode = True
         from_attributes = True
+
+class CategoryCreate(BaseModel):
+    name: str
+    area: str
+    description: Optional[str] = None
+    is_verified: bool = False
+
+class CategoryApproveRequest(BaseModel):
+    name: Optional[str] = None
+    area: Optional[str] = None
+    description: Optional[str] = None
+
+class CategoryMergeRequest(BaseModel):
+    source_category_id: int
+    target_category_id: Optional[int] = None
+    target_category_name: Optional[str] = None
 
 # --- Usuarios ---
 class UserBase(BaseModel):
@@ -47,6 +65,8 @@ class AIPredictionBase(BaseModel):
     predicted_class: str
     confidence: float
     model_version_id: int
+    is_novel_category: Optional[bool] = False
+    similarity_score: Optional[float] = None
 
 class AIPredictionResponse(AIPredictionBase):
     id: int
@@ -72,6 +92,9 @@ class ReportSubmission(ReportCreate):
     confidence: float
     image_path: str
     corrected_class: Optional[str] = None
+    is_novel_category: Optional[bool] = False
+    suggested_area: Optional[str] = None
+    embedding: Optional[List[float]] = None
 
 class ReportResponse(ReportBase):
     id: int
@@ -80,6 +103,7 @@ class ReportResponse(ReportBase):
     image_path: str
     status: ReportStatus
     priority: ReportPriority
+    is_novel_category: bool = False
     created_at: datetime
     updated_at: Optional[datetime]
     

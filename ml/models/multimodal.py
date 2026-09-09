@@ -33,15 +33,16 @@ class BolivarMultimodalModel(nn.Module):
             nn.Linear(256, num_classes)
         )
         
-    def forward(self, pixel_values, input_ids, attention_mask):
+    def forward(self, pixel_values, input_ids, attention_mask, return_embeddings: bool = False):
         """
         Inputs:
             pixel_values: Tensor de imágenes (B, 3, 224, 224)
             input_ids: Tokens de texto de RoBERTa (B, seq_len)
             attention_mask: Máscara de atención de texto (B, seq_len)
+            return_embeddings: Si True, retorna también el vector representativo normalizado L2 de 768d
             
         Output:
-            logits: Predicciones crudas (B, num_classes)
+            logits: Predicciones crudas (B, num_classes) o tupla (logits, embeddings) si return_embeddings=True
         """
         # A. Extraer características visuales y de texto
         # visual_tokens: (B, 197, 768)
@@ -69,4 +70,9 @@ class BolivarMultimodalModel(nn.Module):
         # D. Classification Head
         logits = self.classifier(mean_pooled)
         
+        if return_embeddings:
+            # Normalización L2 para cálculo inmediato de similitud coseno
+            normalized_embeddings = torch.nn.functional.normalize(mean_pooled, p=2, dim=-1)
+            return logits, normalized_embeddings
+            
         return logits
