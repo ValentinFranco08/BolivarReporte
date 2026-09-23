@@ -207,6 +207,17 @@ def create_report(
             submission.category_id = cat.id
 
     # Actualización en Caliente (Online Memory):
+    # Auto-extraer embedding visual si no viene en el payload
+    if not submission.embedding and submission.image_path:
+        fname = os.path.basename(submission.image_path)
+        img_full_path = os.path.join(UPLOADS_DIR, fname)
+        if os.path.exists(img_full_path):
+            try:
+                with open(img_full_path, "rb") as f:
+                    submission.embedding = ai_service.extract_pet_embedding(f.read())
+            except Exception as err:
+                print(f"⚠️ Error auto-extrayendo embedding: {err}")
+
     # Si la categoría ya existe y tenemos el embedding del reporte, actualizamos el centroide de forma ponderada
     if submission.category_id and submission.embedding:
         crud.update_category_centroid(db, submission.category_id, submission.embedding)
@@ -225,8 +236,8 @@ def create_report(
     model_version = crud.get_model_version(db)
     if model_version:
         ai_pred = schemas.AIPredictionBase(
-            predicted_class=submission.predicted_class,
-            confidence=submission.confidence,
+            predicted_class=submission.predicted_class or "animal_reportado",
+            confidence=submission.confidence or 1.0,
             model_version_id=model_version.id,
             is_novel_category=submission.is_novel_category,
         )
@@ -246,6 +257,40 @@ def create_report(
     db.refresh(report)
     return report
 
+@app.get("/api/reports/{report_id}/matches", response_model=schemas.PetMatchResponse)
+def get_report_matches(report_id: int, db: Session = Depends(database.get_db)):
+    """Busca y rankea posibles coincidencias visuales y geográficas para una mascota."""
+    target_report = crud.get_report(db, report_id)
+    if not target_report:
+        raise HTTPException(status_code=404, detail="Reporte no encontrado")
+    
+    matches = crud.find_candidate_pet_matches(db, target_report, top_k=6)
+    return {
+        "matches": matches,
+        "total_checked": len(matches)
+    }
+
+@app.get("/api/alerts/active", response_model=List[schemas.ReportResponse])
+def get_active_alerts(db: Session = Depends(database.get_db)):
+    """Retorna los focos activos de cebos sospechosos y alertas críticas de envenenamiento."""
+    return crud.get_active_danger_alerts(db)
+
+@app.patch("/api/reports/{report_id}/resolve", response_model=schemas.ReportResponse)
+def resolve_pet_report(
+    report_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Marca una mascota como reunida con su familia o una alerta como neutralizada."""
+    report = crud.get_report(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Reporte no encontrado")
+    report.is_resolved = True
+    report.status = models.ReportStatus.RESUELTO
+    db.commit()
+    db.refresh(report)
+    return report
+
 @app.patch("/api/reports/{report_id}", response_model=schemas.ReportResponse)
 def update_report_status(
     report_id: int,
@@ -256,12 +301,23 @@ def update_report_status(
     report = crud.update_report(db, report_id, update.status, update.priority)
     if not report:
         raise HTTPException(status_code=404, detail="Reporte no encontrado")
+    if update.is_resolved is not None:
+        report.is_resolved = update.is_resolved
+        db.commit()
     db.refresh(report)
     return report
 
 @app.get("/api/reports", response_model=List[schemas.ReportResponse])
-def get_reports(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)):
-    return crud.get_reports(db, skip=skip, limit=limit)
+def get_reports(
+    skip: int = 0,
+    limit: int = 100,
+    report_type: Optional[str] = None,
+    db: Session = Depends(database.get_db)
+):
+    query = db.query(models.Report)
+    if report_type:
+        query = query.filter(models.Report.report_type == report_type)
+    return query.order_by(models.Report.created_at.desc()).offset(skip).limit(limit).all()
 
 
 # --- FEEDBACK ---
@@ -399,4 +455,126 @@ def merge_categories(
         "target_id": target.id,
         "new_sample_count": target.sample_count
     }
+
+
+# --- REMUM ---
+
+@app.get("/api/remum/mis-mascotas", response_model=List[schemas.RemumResponse])
+def get_mis_mascotas(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    return db.query(models.RemumRecord).filter(models.RemumRecord.user_id == current_user.id).order_by(models.RemumRecord.created_at.desc()).all()
+@app.get("/api/remum/comunitarios", response_model=List[schemas.RemumResponse])
+def get_comunitarios(db: Session = Depends(database.get_db)):
+    return db.query(models.RemumRecord).filter(
+        models.RemumRecord.is_community_pet == True,
+        models.RemumRecord.latitude.isnot(None)
+    ).all()
+
+@app.post("/api/remum/", response_model=schemas.RemumResponse)
+async def create_remum_record(
+    pet_name: str = Form(...),
+    pet_type: str = Form("perro"),
+    pet_breed: Optional[str] = Form(None),
+    color_description: Optional[str] = Form(None),
+    chip_number: Optional[str] = Form(None),
+    is_community_pet: bool = Form(False),
+    address: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    file: UploadFile = File(None),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    image_path = None
+    if file and file.filename:
+        image_bytes = await file.read()
+        filename = f"{uuid.uuid4()}_{file.filename}"
+        file_path = os.path.join(UPLOADS_DIR, filename)
+        with open(file_path, "wb") as f:
+            f.write(image_bytes)
+        image_path = f"/uploads/{filename}"
+
+    remum_create = schemas.RemumCreate(
+        pet_name=pet_name,
+        pet_type=pet_type,
+        pet_breed=pet_breed,
+        color_description=color_description,
+        chip_number=chip_number,
+        is_community_pet=is_community_pet,
+        address=address,
+        latitude=latitude,
+        longitude=longitude
+    )
+    return crud.create_remum_record(db, current_user.id, remum_create, image_path)
+
+@app.post("/api/remum/{qr_code_id}/salud", response_model=schemas.HealthEventResponse)
+def add_health_event(
+    qr_code_id: str,
+    event: schemas.HealthEventCreate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    remum = crud.get_remum_record_by_qr(db, qr_code_id)
+    if not remum:
+        raise HTTPException(status_code=404, detail="Credencial REMUM no encontrada")
+    
+    # Podriamos verificar si current_user es el dueño o admin, pero por la pregunta del PR lo dejamos abierto o condicionado.
+    # Por ahora solo requerimos auth para evitar bots.
+    return crud.add_health_event(db, remum.id, event)
+
+@app.post("/api/remum/{qr_code_id}/padrinos", response_model=schemas.GodparentResponse)
+def add_godparent(
+    qr_code_id: str,
+    godparent: schemas.GodparentCreate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    remum = crud.get_remum_record_by_qr(db, qr_code_id)
+    if not remum:
+        raise HTTPException(status_code=404, detail="Credencial REMUM no encontrada")
+    if not remum.is_community_pet:
+        raise HTTPException(status_code=400, detail="Esta mascota no es comunitaria, no se le pueden asignar padrinos.")
+    
+    return crud.add_godparent(db, remum.id, godparent)
+
+@app.get("/api/remum/{qr_code_id}", response_model=schemas.RemumResponse)
+def get_remum_record(
+    qr_code_id: str,
+    db: Session = Depends(database.get_db)
+):
+    remum = crud.get_remum_record_by_qr(db, qr_code_id)
+    if not remum:
+        raise HTTPException(status_code=404, detail="Credencial REMUM no encontrada")
+    return remum
+
+@app.post("/api/remum/{qr_code_id}/alerta", response_model=schemas.RemumResponse)
+def trigger_remum_panic(
+    qr_code_id: str,
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    remum = crud.trigger_remum_panic(db, qr_code_id, lat=lat, lng=lng)
+    if not remum:
+        raise HTTPException(status_code=404, detail="Credencial REMUM no encontrada")
+    if remum.user_id != current_user.id and current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="No tienes permiso para emitir alertas para esta mascota")
+    return remum
+
+@app.post("/api/remum/{qr_code_id}/padrinos", response_model=schemas.GodparentResponse)
+def add_godparent(
+    qr_code_id: str,
+    godparent: schemas.GodparentCreate,
+    db: Session = Depends(database.get_db)
+):
+    remum = crud.get_remum_record_by_qr(db, qr_code_id)
+    if not remum:
+        raise HTTPException(status_code=404, detail="Credencial REMUM no encontrada")
+    if not remum.is_community_pet:
+        raise HTTPException(status_code=400, detail="Esta mascota no es comunitaria, no admite padrinos")
+    
+    return crud.add_godparent(db, remum.id, godparent)
 

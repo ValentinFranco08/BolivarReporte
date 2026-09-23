@@ -1,269 +1,41 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   HOJA DE MENSURA — sistema visual de Reporte Bolívar
-
-   Bolívar está dibujada como una grilla de parcelas numeradas. La interfaz
-   toma prestado el idioma de las planchas catastrales: grilla visible, tinta
-   ferroprusiato sobre papel vegetal, cajetín con los datos de la hoja,
-   cifras de parcela en monoespaciada. Idioma técnico y descriptivo: describe
-   una situación, no imputa una infracción.
-
-   Una sola escena de luz: papel claro. El uso real es a la intemperie, a
-   pleno sol, y ese es el caso difícil; no hay variante oscura a medio
-   mantener.
-   ────────────────────────────────────────────────────────────────────────── */
-
+/* Rastro: evidencia, territorio y contacto. */
 @theme {
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-chivo-mono), ui-monospace, monospace;
-
-  /* Papel vegetal: el soporte de la hoja. */
-  --color-papel: #f4f1e8;
-  --color-papel-alto: #fbfaf5;
-  --color-papel-hondo: #e7e2d3;
-
-  /* Tinta ferroprusiato: el trazo de la mensura. */
-  --color-tinta-50: #eef2fa;
-  --color-tinta-100: #d9e2f4;
-  --color-tinta-200: #b3c5e6;
-  --color-tinta-300: #7f9dd1;
-  --color-tinta-400: #4a72b8;
-  --color-tinta-500: #1d4ea0;
-  --color-tinta-600: #0b3c8c;
-  --color-tinta-700: #082f6e;
-  --color-tinta-800: #062350;
-  --color-tinta-900: #041736;
-
-  /* Grafito: la anotación a lápiz. */
-  --color-grafito-100: #dcdcd4;
-  --color-grafito-200: #c3c3b9;
-  --color-grafito-400: #8a8a80;
-  --color-grafito-500: #6d6d64;
-  --color-grafito-600: #55554e;
-  --color-grafito-900: #101418;
-
-  /* Sello: sólo para marcar, nunca para alarmar. */
-  --color-sello-100: #f7dcd7;
-  --color-sello-500: #c8402c;
-  --color-sello-600: #a83322;
-  --color-sello-700: #86281a;
-
-  /* Verificado: el visto del expediente cerrado. */
-  --color-visto-100: #d7e8dc;
-  --color-visto-600: #2f6b45;
-  --color-visto-700: #234f34;
-
-  /* Ámbar de anotación al margen. */
-  --color-margen-100: #f6e6c8;
-  --color-margen-600: #8a6316;
-
-  /* Paso de la grilla de mensura. */
-  --espaciado-grilla: 28px;
-
-  --radius-hoja: 2px;
-
-  --shadow-lamina: 0 1px 2px rgba(16, 20, 24, 0.06), 0 8px 20px -6px rgba(16, 20, 24, 0.14);
-  --shadow-lamina-alta: 0 2px 4px rgba(16, 20, 24, 0.08), 0 22px 44px -12px rgba(16, 20, 24, 0.22);
+  --font-serif: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+  --color-lino: #f4f1e9; --color-lino-alto: #fffdf8; --color-lino-suave: #e8e1d5; --color-lino-medio: #d7cdbd;
+  --color-corteza: #1e2923; --color-corteza-suave: #526057; --color-corteza-clara: #778279;
+  --color-borde-calido: #cbc4b7; --color-borde-suave: #e1dbd0; --color-borde-fuerte: #a59d90;
+  --color-terracota: #b55235; --color-terracota-50: #f9e8e1; --color-terracota-100: #f0cbc0; --color-terracota-200: #df9f8e; --color-terracota-500: #b55235; --color-terracota-600: #8e3d26; --color-terracota-700: #6e2d1b;
+  --color-salvia: #2d684f; --color-salvia-50: #e5f0e9; --color-salvia-100: #c7dfd0; --color-salvia-200: #9fc5ae; --color-salvia-600: #20503d; --color-salvia-700: #173d2e;
+  --color-coral: #a7332b; --color-coral-50: #fae7e3; --color-coral-100: #f0c5bd; --color-coral-200: #dc988e; --color-coral-600: #7c231e;
+  --color-ambar: #926514; --color-ambar-50: #f8efd9; --color-ambar-100: #ebd8aa; --color-ambar-500: #ad7a18; --color-ambar-600: #75500e;
+  /* Alias de compatibilidad: las vistas administrativas migran por etapas. */
+  --color-papel: #f4f1e9; --color-papel-alto: #fffdf8; --color-papel-medio: #e8e1d5; --color-papel-hondo: #d7cdbd;
+  --color-grafito-900: #1e2923; --color-grafito-700: #3e4a42; --color-grafito-600: #526057; --color-grafito-500: #778279; --color-grafito-400: #a59d90; --color-grafito-300: #cbc4b7; --color-grafito-200: #e1dbd0; --color-grafito-100: #f1ede6;
+  --color-tinta-50: #e5f0e9; --color-tinta-200: #c7dfd0; --color-tinta-300: #9fc5ae; --color-tinta-600: #2d684f; --color-tinta-700: #20503d; --color-tinta-800: #173d2e;
+  --color-sello-50: #fae7e3; --color-sello-100: #f0c5bd; --color-sello-300: #dc988e; --color-sello-500: #b55235; --color-sello-700: #7c231e;
+  --color-visto-50: #f8efd9; --color-visto-100: #ebd8aa; --color-visto-300: #d9bd74; --color-visto-600: #926514; --color-visto-700: #75500e;
+  --color-margen: #f4f1e9; --color-margen-100: #e8e1d5; --color-margen-600: #778279;
+  --shadow-warm-card: 0 14px 32px -24px rgb(30 41 35 / .5); --shadow-warm-hover: 0 24px 38px -24px rgb(30 41 35 / .55); --shadow-warm-sheet: 0 -8px 24px -20px rgb(30 41 35 / .4); --shadow-xs: 0 3px 8px -6px rgb(30 41 35 / .45);
 }
-
-/* ─── Superficies del navegador ───────────────────────────────────────────── */
-
-html {
-  color-scheme: light;
-  -webkit-tap-highlight-color: rgba(11, 60, 140, 0.16);
-}
-
-html,
-body {
-  height: 100%;
-}
-
-body {
-  background-color: var(--color-papel);
-  color: var(--color-grafito-900);
-}
-
-::selection {
-  background-color: var(--color-tinta-600);
-  color: var(--color-papel-alto);
-}
-
-* {
-  caret-color: var(--color-tinta-600);
-}
-
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-tinta-600);
-  outline-offset: 2px;
-  border-radius: 1px;
-}
-
-a {
-  text-underline-offset: 0.2em;
-  text-decoration-thickness: 1px;
-}
-
-/* Cifras alineadas en columna: números de parcela, fechas, coordenadas. */
-:where(table, .cifras) {
-  font-variant-numeric: tabular-nums;
-}
-
-@supports (scrollbar-color: auto) {
-  html {
-    scrollbar-color: var(--color-grafito-200) var(--color-papel);
-    scrollbar-width: thin;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ─── La grilla de mensura ────────────────────────────────────────────────── */
-
-/* El armazón visible de la hoja. Es un instrumento de medición, no una
-   textura decorativa: las parcelas se apoyan en este paso. */
-@utility mensura {
-  background-image:
-    linear-gradient(to right, rgba(11, 60, 140, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(11, 60, 140, 0.07) 1px, transparent 1px);
-  background-size: var(--espaciado-grilla) var(--espaciado-grilla);
-  background-position: center top;
-}
-
-/* Grilla mayor: cada diez pasos, el trazo se refuerza como en la plancha. */
-@utility mensura-mayor {
-  background-image:
-    linear-gradient(to right, rgba(11, 60, 140, 0.14) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(11, 60, 140, 0.14) 1px, transparent 1px),
-    linear-gradient(to right, rgba(11, 60, 140, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(11, 60, 140, 0.06) 1px, transparent 1px);
-  background-size:
-    calc(var(--espaciado-grilla) * 5) calc(var(--espaciado-grilla) * 5),
-    calc(var(--espaciado-grilla) * 5) calc(var(--espaciado-grilla) * 5),
-    var(--espaciado-grilla) var(--espaciado-grilla),
-    var(--espaciado-grilla) var(--espaciado-grilla);
-  background-position: center top;
-}
-
-/* Lámina: la foto o el bloque pegado sobre la hoja. */
-@utility lamina {
-  background-color: var(--color-papel-alto);
-  border: 1px solid var(--color-grafito-100);
-  box-shadow: var(--shadow-lamina);
-}
-
-/* Rótulo de campo del cajetín. */
-@utility rotulo {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  line-height: 1.2;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-grafito-500);
-}
-
-/* Cifra de parcela: el número que identifica el reporte. */
-@utility cifra {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-/* Título de hoja: Archivo expandida, la voz condensada-ancha de las planchas.
-   Compromete el eje wdth de la variable; sin esto el eje viaja sin usarse. */
-@utility titulo-hoja {
-  font-stretch: 118%;
-}
-
-/* ─── Movimiento autorizado ───────────────────────────────────────────────── */
-
-/* El único momento de movimiento del producto: la hoja se despliega una vez,
-   de arriba hacia abajo, como el plano que se abre en la mano. Parte de un
-   estado ya visible para que nada dependa del final de la animación. */
-@keyframes desplegar {
-  from {
-    opacity: 0.001;
-    transform: translateY(-6px);
-    clip-path: inset(0 0 100% 0);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-@utility desplegar {
-  animation: desplegar 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes sellar {
-  from {
-    opacity: 0.001;
-    transform: scale(1.12) rotate(-3deg);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) rotate(-1.5deg);
-  }
-}
-
-@utility sellar {
-  animation: sellar 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* ─── Leaflet dentro del mundo de la hoja ─────────────────────────────────── */
-
-.leaflet-container {
-  background-color: var(--color-papel-hondo);
-  font-family: var(--font-sans);
-}
-
-.leaflet-popup-content-wrapper {
-  border-radius: var(--radius-hoja);
-  background-color: var(--color-papel-alto);
-  border: 1px solid var(--color-grafito-100);
-  box-shadow: var(--shadow-lamina-alta);
-  padding: 0;
-}
-
-.leaflet-popup-content {
-  margin: 0;
-  width: 15rem !important;
-}
-
-.leaflet-popup-tip {
-  background-color: var(--color-papel-alto);
-  border: 1px solid var(--color-grafito-100);
-}
-
-.leaflet-popup-close-button {
-  color: var(--color-grafito-500) !important;
-  padding: 0.5rem 0.5rem 0 0 !important;
-}
-
-.leaflet-bar,
-.leaflet-control-attribution {
-  border-radius: var(--radius-hoja) !important;
-  border: 1px solid var(--color-grafito-100) !important;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-}
-
-.leaflet-bar a {
-  color: var(--color-tinta-700) !important;
-  background-color: var(--color-papel-alto) !important;
-}
-
-.leaflet-bar a:hover {
-  background-color: var(--color-tinta-50) !important;
-}
+html { color-scheme: light; -webkit-tap-highlight-color: rgb(181 82 53 / .16); }
+html, body { min-height: 100%; }
+body { background: var(--color-lino); color: var(--color-corteza); font-family: var(--font-sans); }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .24; background-image: linear-gradient(90deg, transparent 0 96%, rgb(61 79 68 / .09) 96%), linear-gradient(0deg, transparent 0 96%, rgb(61 79 68 / .07) 96%); background-size: 40px 40px; }
+::selection { background: var(--color-terracota-100); color: var(--color-corteza); }
+* { caret-color: var(--color-terracota); }
+:where(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--color-terracota); outline-offset: 3px; }
+.ficha-vecinal { background: var(--color-lino-alto); border: 1px solid var(--color-borde-calido); border-radius: 12px; box-shadow: var(--shadow-warm-card); transition: transform .22s ease-out, box-shadow .22s ease-out; }
+.ficha-vecinal:hover { transform: translateY(-3px); box-shadow: var(--shadow-warm-hover); }
+.rotulo { font-family: var(--font-mono); font-size: .68rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--color-corteza-clara); }
+.estado-sello { border: 1px solid currentColor; border-radius: 3px; font-family: var(--font-mono); font-size: .65rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.boton-principal { background: var(--color-terracota); color: white; border: 1px solid var(--color-terracota); border-radius: 8px; font-weight: 700; transition: background .2s ease-out, transform .2s ease-out; }
+.boton-principal:hover { background: var(--color-terracota-600); transform: translateY(-1px); }
+.rounded-hoja { border-radius: 10px; }
+.mensura-mayor { background: linear-gradient(135deg, var(--color-lino) 0%, var(--color-lino-alto) 62%, var(--color-salvia-50) 100%); }
+@supports (scrollbar-color: auto) { html { scrollbar-color: var(--color-borde-fuerte) var(--color-lino); scrollbar-width: thin; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

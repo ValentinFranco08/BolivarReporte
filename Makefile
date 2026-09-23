@@ -4,7 +4,7 @@ dev:
 	./dev.sh
 
 backend:
-	cd backend && PYTHONPATH=. ../venv/bin/uvicorn app.main:app --reload --port 8000
+	cd backend && PYTHONPATH=. ../venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 
 frontend:
 	cd frontend && npm run dev

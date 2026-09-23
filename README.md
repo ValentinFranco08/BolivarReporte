@@ -151,8 +151,20 @@ python3 ml/training/train_multimodal.py
 
 - [`PLAN_IMPLEMENTACION.md`](PLAN_IMPLEMENTACION.md) — Plan técnico detallado
 - [`PLAN_IMPLEMENTACION_TRANSITO.md`](PLAN_IMPLEMENTACION_TRANSITO.md) — Plan específico, estado y criterios de cierre del módulo
+- [`PLAN_REDISENO_RASTRO.md`](PLAN_REDISENO_RASTRO.md) — Plan integral del rediseño de Bolívar Animal: experiencia pública, mapa, alertas, accesibilidad y mesa operativa.
 - [`enfoque del proyecto.md`](enfoque%20del%20proyecto.md) — Visión y diferencial del producto
 - [`nuevo plan de implementacion.md`](nuevo%20plan%20de%20implementacion.md) — Especificaciones técnicas de la arquitectura IA
+
+## Diseño de interfaz
+
+El rediseño visual de la plataforma sigue la dirección **Rastro** definida en
+[`PLAN_REDISENO_RASTRO.md`](PLAN_REDISENO_RASTRO.md). La interfaz prioriza la
+foto, la situación, la última ubicación y el contacto para facilitar la
+búsqueda y recuperación comunitaria de mascotas en Bolívar.
+
+La implementación y validación del frontend utiliza la skill avanzada
+**Impeccable**: dirección de diseño, componentes responsive, accesibilidad,
+inspección en escritorio y móvil, y detección de patrones visuales genéricos.
 
 ---
 

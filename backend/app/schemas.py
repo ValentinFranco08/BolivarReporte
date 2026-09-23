@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
-from .models import ReportStatus, ReportPriority, UserRole
+from .models import ReportStatus, ReportPriority, UserRole, AnimalReportType, PetType, PetHealthStatus, RemumStatus, HealthEventType
 
 # --- Categorías ---
 class CategoryBase(BaseModel):
@@ -17,7 +17,6 @@ class CategoryResponse(CategoryBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 class CategoryCreate(BaseModel):
@@ -50,7 +49,6 @@ class UserResponse(UserBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 class Token(BaseModel):
@@ -73,7 +71,6 @@ class AIPredictionResponse(AIPredictionBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 # --- Reportes ---
@@ -82,14 +79,23 @@ class ReportBase(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     address: Optional[str] = None
+    report_type: Optional[AnimalReportType] = AnimalReportType.PERDIDO
+    pet_type: Optional[PetType] = PetType.PERRO
+    pet_name: Optional[str] = None
+    pet_breed: Optional[str] = None
+    color_description: Optional[str] = None
+    health_status: Optional[PetHealthStatus] = PetHealthStatus.SANO
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    is_resolved: Optional[bool] = False
 
 class ReportCreate(ReportBase):
     category_id: Optional[int] = None
     # image_path se genera en el backend, no viene en el schema
 
 class ReportSubmission(ReportCreate):
-    predicted_class: str
-    confidence: float
+    predicted_class: Optional[str] = "animal_perdido"
+    confidence: Optional[float] = 1.0
     image_path: str
     corrected_class: Optional[str] = None
     is_novel_category: Optional[bool] = False
@@ -98,26 +104,36 @@ class ReportSubmission(ReportCreate):
 
 class ReportResponse(ReportBase):
     id: int
-    user_id: Optional[int]
-    category_id: Optional[int]
+    user_id: Optional[int] = None
+    category_id: Optional[int] = None
     image_path: str
     status: ReportStatus
     priority: ReportPriority
     is_novel_category: bool = False
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
     
     category: Optional[CategoryResponse] = None
     prediction: Optional[AIPredictionResponse] = None
     # user: Optional[UserResponse] = None # Omitimos detalles del usuario por privacidad
 
     class Config:
-        orm_mode = True
         from_attributes = True
+
+class PetMatchCandidate(BaseModel):
+    report: ReportResponse
+    visual_similarity: float
+    distance_km: float
+    combined_score: float
+
+class PetMatchResponse(BaseModel):
+    matches: List[PetMatchCandidate]
+    total_checked: int
 
 class ReportUpdateStatus(BaseModel):
     status: ReportStatus
     priority: Optional[ReportPriority] = None
+    is_resolved: Optional[bool] = None
 
 # --- Feedback ---
 class FeedbackCreate(BaseModel):
@@ -133,5 +149,64 @@ class FeedbackResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+# --- REMUM ---
+class HealthEventBase(BaseModel):
+    event_type: HealthEventType
+    date: datetime
+    expiration_date: Optional[datetime] = None
+    certificate_number: Optional[str] = None
+    notes: Optional[str] = None
+
+class HealthEventCreate(HealthEventBase):
+    pass
+
+class HealthEventResponse(HealthEventBase):
+    id: int
+    remum_record_id: int
+
+    class Config:
+        from_attributes = True
+
+class GodparentBase(BaseModel):
+    name: str
+    task: str
+
+class GodparentCreate(GodparentBase):
+    pass
+
+class GodparentResponse(GodparentBase):
+    id: int
+    remum_record_id: int
+
+    class Config:
+        from_attributes = True
+
+class RemumBase(BaseModel):
+    pet_name: str
+    pet_type: Optional[PetType] = PetType.PERRO
+    pet_breed: Optional[str] = None
+    color_description: Optional[str] = None
+    chip_number: Optional[str] = None
+    is_community_pet: Optional[bool] = False
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class RemumCreate(RemumBase):
+    pass
+
+class RemumResponse(RemumBase):
+    id: int
+    user_id: int
+    image_path: Optional[str] = None
+    qr_code_id: str
+    status: RemumStatus
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    health_events: List[HealthEventResponse] = []
+    godparents: List[GodparentResponse] = []
+
+    class Config:
         from_attributes = True

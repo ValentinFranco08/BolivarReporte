@@ -183,6 +183,18 @@ def create_report(
     embedding: Optional[List[float]] = None
 ):
     embedding_json = json.dumps(embedding) if embedding else None
+    
+    # Extraer campos de animal si vienen en el schema
+    report_type = getattr(report, "report_type", models.AnimalReportType.PERDIDO)
+    pet_type = getattr(report, "pet_type", models.PetType.PERRO)
+    pet_name = getattr(report, "pet_name", None)
+    pet_breed = getattr(report, "pet_breed", None)
+    color_description = getattr(report, "color_description", None)
+    health_status = getattr(report, "health_status", models.PetHealthStatus.SANO)
+    contact_name = getattr(report, "contact_name", None)
+    contact_phone = getattr(report, "contact_phone", None)
+    is_resolved = getattr(report, "is_resolved", False) or False
+
     db_report = models.Report(
         description=report.description,
         latitude=report.latitude,
@@ -192,12 +204,83 @@ def create_report(
         image_path=image_path,
         user_id=user_id,
         is_novel_category=is_novel_category,
-        embedding=embedding_json
+        embedding=embedding_json,
+        report_type=report_type,
+        pet_type=pet_type,
+        pet_name=pet_name,
+        pet_breed=pet_breed,
+        color_description=color_description,
+        health_status=health_status,
+        contact_name=contact_name,
+        contact_phone=contact_phone,
+        is_resolved=is_resolved
     )
     db.add(db_report)
     db.commit()
     db.refresh(db_report)
     return db_report
+
+def get_active_danger_alerts(db: Session):
+    """Obtiene alertas activas de cebos tóxicos o peligro inminente."""
+    return db.query(models.Report).filter(
+        models.Report.report_type == models.AnimalReportType.ALERTA_CEBO,
+        models.Report.is_resolved == False
+    ).order_by(models.Report.created_at.desc()).all()
+
+def find_candidate_pet_matches(db: Session, target_report: models.Report, top_k: int = 5) -> List[dict]:
+    """
+    Busca coincidencias de mascotas por similitud visual y distancia en Bolívar.
+    Si el reporte es PERDIDO -> busca en ENCONTRADO / EN_TRANSITO.
+    Si el reporte es ENCONTRADO -> busca en PERDIDO.
+    """
+    from .ai_service import calculate_cosine_similarity, haversine_km, calculate_pet_match_score
+
+    if not target_report.embedding:
+        return []
+    try:
+        target_emb = json.loads(target_report.embedding)
+    except Exception:
+        return []
+
+    # Determinar qué tipos contrastar
+    target_type = str(target_report.report_type.value if hasattr(target_report.report_type, 'value') else target_report.report_type)
+    if target_type == "perdido":
+        opposite_types = [models.AnimalReportType.ENCONTRADO, models.AnimalReportType.EN_TRANSITO]
+    elif target_type in ("encontrado", "en_transito"):
+        opposite_types = [models.AnimalReportType.PERDIDO]
+    else:
+        opposite_types = [models.AnimalReportType.PERDIDO, models.AnimalReportType.ENCONTRADO]
+
+    candidates = db.query(models.Report).filter(
+        models.Report.id != target_report.id,
+        models.Report.report_type.in_(opposite_types),
+        models.Report.pet_type == target_report.pet_type,
+        models.Report.is_resolved == False,
+        models.Report.embedding.isnot(None)
+    ).all()
+
+    scored_candidates = []
+    for cand in candidates:
+        try:
+            cand_emb = json.loads(cand.embedding)
+            vis_sim = calculate_cosine_similarity(target_emb, cand_emb)
+            dist_km = haversine_km(target_report.latitude, target_report.longitude, cand.latitude, cand.longitude)
+            score = calculate_pet_match_score(vis_sim, dist_km, max_radius_km=5.0)
+
+            # Filtrar si la similitud visual es muy baja (< 0.40)
+            if vis_sim >= 0.35:
+                scored_candidates.append({
+                    "report": cand,
+                    "visual_similarity": round(vis_sim, 3),
+                    "distance_km": dist_km,
+                    "combined_score": score
+                })
+        except Exception as e:
+            continue
+
+    # Ordenar por score combinado descendente
+    scored_candidates.sort(key=lambda x: x["combined_score"], reverse=True)
+    return scored_candidates[:top_k]
 
 def update_report_status(db: Session, report_id: int, status: models.ReportStatus):
     report = get_report(db, report_id)
@@ -284,3 +367,91 @@ def mark_feedback_retrained(db: Session, feedback_ids: List[int]):
         )
         db.commit()
 
+# --- REMUM ---
+import random
+import string
+
+def generate_qr_hash(length: int = 4):
+    chars = string.ascii_uppercase + string.digits
+    return "B-" + "".join(random.choice(chars) for _ in range(length))
+
+def get_unique_qr_hash(db: Session) -> str:
+    while True:
+        qr_hash = generate_qr_hash()
+        if not db.query(models.RemumRecord).filter(models.RemumRecord.qr_code_id == qr_hash).first():
+            return qr_hash
+
+def create_remum_record(db: Session, user_id: int, remum: schemas.RemumCreate, image_path: str = None):
+    qr_code_id = get_unique_qr_hash(db)
+    db_remum = models.RemumRecord(
+        user_id=user_id,
+        pet_name=remum.pet_name,
+        pet_type=remum.pet_type,
+        pet_breed=remum.pet_breed,
+        color_description=remum.color_description,
+        chip_number=remum.chip_number,
+        is_community_pet=remum.is_community_pet,
+        address=remum.address,
+        qr_code_id=qr_code_id,
+        image_path=image_path
+    )
+    db.add(db_remum)
+    db.commit()
+    db.refresh(db_remum)
+    return db_remum
+
+def get_remum_record_by_qr(db: Session, qr_code_id: str):
+    return db.query(models.RemumRecord).filter(models.RemumRecord.qr_code_id == qr_code_id).first()
+
+def add_health_event(db: Session, remum_id: int, event: schemas.HealthEventCreate):
+    db_event = models.RemumHealthEvent(
+        remum_record_id=remum_id,
+        **event.model_dump()
+    )
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
+def add_godparent(db: Session, remum_id: int, godparent: schemas.GodparentCreate):
+    db_gp = models.RemumGodparent(
+        remum_record_id=remum_id,
+        name=godparent.name,
+        task=godparent.task
+    )
+    db.add(db_gp)
+    db.commit()
+    db.refresh(db_gp)
+    return db_gp
+
+def trigger_remum_panic(db: Session, qr_code_id: str, lat: float = None, lng: float = None):
+    remum = get_remum_record_by_qr(db, qr_code_id)
+    if not remum:
+        return None
+    
+    # Cambiar estado a extraviado
+    remum.status = models.RemumStatus.EXTRAVIADO
+    
+    # Crear reporte automaticamente
+    db_report = models.Report(
+        user_id=remum.user_id,
+        description=f"¡ALERTA AUTOMÁTICA REMUM! {remum.pet_name} se extravió en la zona de {remum.address or 'Bolívar'}. Por favor prestar atención.",
+        address=remum.address,
+        latitude=lat or remum.latitude,
+        longitude=lng or remum.longitude,
+        image_path=remum.image_path or "", # o una imagen por defecto
+        report_type=models.AnimalReportType.PERDIDO,
+        pet_type=remum.pet_type,
+        pet_name=remum.pet_name,
+        pet_breed=remum.pet_breed,
+        color_description=remum.color_description,
+        health_status=models.PetHealthStatus.CON_COLLAR,
+        contact_name=remum.user.name if remum.user else None,
+        is_resolved=False,
+        status=models.ReportStatus.REPORTADO,
+        priority=models.ReportPriority.HIGH
+    )
+    db.add(db_report)
+    db.commit()
+    db.refresh(remum)
+    return remum

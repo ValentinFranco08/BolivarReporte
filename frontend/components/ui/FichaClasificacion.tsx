@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Icono } from './Icono';
 import { MarcaArea } from './marcas';
-import { CATEGORIAS, etiquetaLegible, buscarCategoria, AREAS } from '@/lib/taxonomy';
+import { CATEGORIAS, etiquetaLegible, buscarCategoria, AREAS, type Area } from '@/lib/taxonomy';
 
 /**
  * Lo que ve el vecino después de que se analiza la foto.
@@ -37,7 +37,6 @@ export function FichaClasificacion({
   suggestedDescription,
 }: FichaClasificacionProps) {
   const [editando, setEditando] = useState(false);
-  const [personalizado, setPersonalizado] = useState('');
 
   const vigente = correccion ?? etiqueta;
   const categoria = buscarCategoria(vigente);
@@ -51,7 +50,7 @@ export function FichaClasificacion({
 
   const areaVigente = correccion
     ? (buscarCategoria(correccion)?.area ?? null)
-    : (categoria?.area ?? (suggestedArea as any) ?? null);
+    : (categoria?.area ?? (suggestedArea as Area | undefined) ?? null);
 
   const descripcionVigente = correccion
     ? buscarCategoria(correccion)?.description

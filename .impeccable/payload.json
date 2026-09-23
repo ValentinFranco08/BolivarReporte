@@ -1,0 +1,120 @@
+{
+  "title": "Decidir el estilo visual para Bolívar Animal",
+  "question": "Se ha asignado el estilo 'Brigada Vecinal'. ¿Lo mantenemos, exploramos una alternativa, o volvemos a lanzar los dados?",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Brigada Vecinal (Alta Visibilidad)",
+      "kicker": "THE ROLL",
+      "lineage": "Uniformes de defensa civil, chalecos reflectantes, afiches de calle",
+      "thesis": "Una herramienta de acción urgente, diseñada para leerse bajo las luces de la calle.",
+      "palette": [
+        "#d97736",
+        "#faf8f5",
+        "#e11d48",
+        "#3a2a20"
+      ],
+      "materials": [
+        "Lonas de alta durabilidad",
+        "Parches de alto contraste"
+      ],
+      "viewport": "Cabeceras de sangrado completo de alta visibilidad, tarjetas que parecen credenciales físicas de rescate.",
+      "risk": "Puede sentirse demasiado alarmante o agresivo si la jerarquía visual no es impecable.",
+      "raised": [
+        {
+          "from": "studio-dumbar-identity",
+          "raise": "Bloques de color atrevidos y directos para alertas en lugar de bordes tímidos."
+        },
+        {
+          "from": "signals-instruments-night-flight-six-pack",
+          "raise": "Movimiento físico amortiguado: los estados cambian con certeza física, no con chasquidos digitales repentinos."
+        }
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.webp"
+    },
+    {
+      "id": "challenger-cartelera",
+      "label": "La Cartelera de Pueblo",
+      "verdict": "competitive",
+      "lineage": "Pizarras de corcho, chinchetas, recortes de papel en el kiosco local",
+      "thesis": "El equivalente digital a la cartelera física del vecindario.",
+      "palette": [
+        "#faf8f5",
+        "#3a2a20",
+        "#d97706"
+      ],
+      "materials": [
+        "Textura de papel",
+        "Bordes irregulares"
+      ],
+      "viewport": "Un espacio comunitario donde las fotos y avisos se superponen de forma orgánica.",
+      "case": "Se alinea perfectamente con el sentido comunitario, pero pierde ligeramente en claridad de acción de emergencia.",
+      "risk": "Puede verse desorganizado si no se controla el esparcimiento de los elementos.",
+      "comp": ".impeccable/mocks/decision/challenger-cartelera.webp"
+    },
+    {
+      "id": "challenger-pasaporte",
+      "label": "El Pasaporte Cívico",
+      "verdict": "competitive",
+      "lineage": "Libretas sanitarias veterinarias, sellos municipales, grillas estructuradas",
+      "thesis": "La burocracia hecha hermosa, confiable y oficial.",
+      "palette": [
+        "#3d7a58",
+        "#faf8f5",
+        "#3a2a20"
+      ],
+      "materials": [
+        "Sellos de tinta",
+        "Tablas tipográficas"
+      ],
+      "viewport": "Información tabular estructurada, sellos de autenticidad para cada reporte verificado.",
+      "case": "Aporta una tremenda confianza y orden, pero puede sentirse frío en momentos de desesperación.",
+      "risk": "Demasiado parecido a un trámite gubernamental.",
+      "comp": ".impeccable/mocks/decision/challenger-pasaporte.webp"
+    },
+    {
+      "id": "challenger-dumbar",
+      "label": "Sistema Identidad Modular",
+      "verdict": "declined",
+      "lineage": "Identidades de estudio de diseño corporativo",
+      "palette": [
+        "#ff00ff",
+        "#00ffff"
+      ],
+      "materials": [
+        "Vectores planos",
+        "Fotografía editorial"
+      ],
+      "case": "Pierde en ambas dimensiones: no se alinea con la comunidad ni con el rescate animal.",
+      "kept": "Densidad de color sin miedo."
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": false
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "Plataforma Genérica (Standard)",
+    "thesis": "Lo que la categoría suele hacer, un listado limpio de fotos.",
+    "palette": [
+      "#ffffff",
+      "#f3f4f6",
+      "#111827"
+    ],
+    "materials": [
+      "Tarjetas blancas limpias",
+      "Sombras suaves"
+    ],
+    "viewport": "Un diseño genérico de grid con tarjetas de mascotas y botones azules.",
+    "risk": "Es exactamente lo que queremos evitar: parecer una plataforma más.",
+    "comp": ".impeccable/mocks/decision/canon.webp"
+  },
+  "steer": true
+}

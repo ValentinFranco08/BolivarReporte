@@ -1,39 +1,57 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import { urlDeImagen, type Reporte } from '@/lib/api';
-import { etiquetaLegible, ESTADO_LABEL, type Prioridad } from '@/lib/taxonomy';
 
 /** Centro de San Carlos de Bolívar. */
 const CENTRO_BOLIVAR: [number, number] = [-36.2312, -61.1136];
 
-/**
- * Chincheta de mensura dibujada a mano en SVG, en la tinta de la hoja.
- * Reemplaza el marcador azul por defecto de Leaflet, que venía además de un
- * CDN externo.
- */
-const COLOR_POR_PRIORIDAD: Record<Prioridad, string> = {
-  baja: '#6d6d64',
-  media: '#1d4ea0',
-  alta: '#8a6316',
-  critica: '#c8402c',
-};
+function getPetMarkerIcon(tipo?: string): L.DivIcon {
+  const configs: Record<string, { bg: string; color: string; border: string; icon: string }> = {
+    perdido: { bg: '#fffbeb', color: '#b45309', border: '#d97706', icon: '🔍' },
+    encontrado: { bg: '#f2f8f4', color: '#2c6a49', border: '#3d7a58', icon: '🐾' },
+    en_transito: { bg: '#fffbeb', color: '#b45309', border: '#d97706', icon: '🏡' },
+    alerta_cebo: { bg: '#e11d48', color: '#ffffff', border: '#be123c', icon: '🚨' },
+    adopcion: { bg: '#fff1f2', color: '#be123c', border: '#e11d48', icon: '❤️' },
+  };
 
-function chincheta(prioridad: Prioridad): L.DivIcon {
-  const color = COLOR_POR_PRIORIDAD[prioridad] ?? COLOR_POR_PRIORIDAD.media;
+  const current = configs[tipo || 'perdido'] || configs.perdido;
+
   return L.divIcon({
-    className: 'chincheta-mensura',
+    className: 'marcador-vecinal',
     html: `
-      <svg width="26" height="34" viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 33S24 21.5 24 13A11 11 0 1 0 2 13c0 8.5 11 20 11 20Z"
-              fill="${color}" stroke="#f4f1e8" stroke-width="1.5"/>
-        <circle cx="13" cy="13" r="4" fill="#f4f1e8"/>
-      </svg>`,
-    iconSize: [26, 34],
-    iconAnchor: [13, 33],
-    popupAnchor: [0, -30],
+      <div style="
+        position: relative;
+        width: 36px;
+        height: 36px;
+        background-color: ${current.bg};
+        border: 2.5px solid ${current.border};
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 4px 12px rgba(92, 60, 36, 0.2);
+        cursor: pointer;
+      ">
+        <span>${current.icon}</span>
+        <div style="
+          position: absolute;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 6px solid ${current.border};
+        "></div>
+      </div>`,
+    iconSize: [36, 42],
+    iconAnchor: [18, 42],
+    popupAnchor: [0, -42],
   });
 }
 
@@ -44,7 +62,7 @@ interface MapProps {
 export default function Map({ reports }: MapProps) {
   const conCoords = useMemo(
     () => reports.filter((r) => r.latitude !== null && r.longitude !== null),
-    [reports],
+    [reports]
   );
 
   return (
@@ -52,65 +70,107 @@ export default function Map({ reports }: MapProps) {
       center={CENTRO_BOLIVAR}
       zoom={14}
       zoomControl={false}
-      style={{ height: '100%', width: '100%' }}
+      style={{ minHeight: '100vh', width: '100%', zIndex: 10 }}
     >
-      {/* Teselas claras: la hoja se lee al sol. */}
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
       />
       <ZoomControl position="bottomright" />
 
       {conCoords.map((reporte) => {
         const foto = urlDeImagen(reporte.image_path);
-        const categoria =
-          reporte.category?.name ?? reporte.prediction?.predicted_class ?? null;
+        const tipo = reporte.report_type || 'perdido';
+        const esAlertaCebo = tipo === 'alerta_cebo';
+        const waPhone = reporte.contact_phone?.replace(/[^\d+]/g, '');
 
         return (
-          <Marker
-            key={reporte.id}
-            position={[reporte.latitude!, reporte.longitude!]}
-            icon={chincheta(reporte.priority)}
-          >
-            <Popup>
-              <div className="w-60 font-sans">
-                {foto ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={foto}
-                    alt={`Situación reportada: ${etiquetaLegible(categoria)}`}
-                    className="h-28 w-full object-cover"
-                  />
-                ) : null}
-                <div className="px-3.5 py-3">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="cifra text-[0.75rem] text-grafito-500">
-                      Nº {reporte.id}
+          <React.Fragment key={reporte.id}>
+            {/* Si es alerta de cebo, trazamos el perímetro de advertencia en coral */}
+            {esAlertaCebo && (
+              <Circle
+                center={[reporte.latitude!, reporte.longitude!]}
+                radius={250}
+                pathOptions={{
+                  color: '#e11d48',
+                  fillColor: '#e11d48',
+                  fillOpacity: 0.15,
+                  dashArray: '4, 8',
+                  weight: 2,
+                }}
+              />
+            )}
+
+            <Marker
+              position={[reporte.latitude!, reporte.longitude!]}
+              icon={getPetMarkerIcon(tipo)}
+            >
+              <Popup className="popup-vecinal" maxWidth={280}>
+                <div style={{ fontFamily: 'var(--font-sans)', padding: '2px' }}>
+                  {foto && (
+                    <div style={{ position: 'relative', width: '100%', height: '140px', borderRadius: '16px', overflow: 'hidden', marginBottom: '8px' }}>
+                      <img
+                        src={foto}
+                        alt={reporte.pet_name || 'Mascota'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: esAlertaCebo ? '#e11d48' : '#d97736' }}>
+                      {esAlertaCebo ? '⚠️ CEBO TÓXICO' : tipo === 'encontrado' ? '🛡️ ENCONTRADO' : '🔍 PERDIDO'}
                     </span>
-                    <span className="font-mono text-[0.625rem] uppercase tracking-[0.08em] text-grafito-500">
-                      {ESTADO_LABEL[reporte.status] ?? reporte.status}
+                    <span style={{ fontSize: '11px', color: '#78655b' }}>
+                      {new Date(reporte.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
 
-                  <p className="mt-1 text-[0.9375rem] font-semibold leading-snug text-grafito-900">
-                    {etiquetaLegible(categoria)}
-                  </p>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 'bold', color: '#3a2a20' }}>
+                    {reporte.pet_name || (esAlertaCebo ? 'Peligro en vía pública' : 'Mascota registrada')}
+                  </h4>
 
-                  {reporte.description ? (
-                    <p className="mt-1.5 line-clamp-2 text-[0.8125rem] leading-relaxed text-grafito-600">
+                  {reporte.address && (
+                    <p style={{ margin: '0 0 6px 0', fontSize: '12px', color: '#554339' }}>
+                      📍 {reporte.address}
+                    </p>
+                  )}
+
+                  {reporte.description && (
+                    <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#78655b', lineHeight: '1.4' }}>
                       {reporte.description}
                     </p>
-                  ) : null}
+                  )}
 
-                  {reporte.address ? (
-                    <p className="mt-2 truncate text-[0.75rem] text-grafito-500">
-                      {reporte.address}
-                    </p>
-                  ) : null}
+                  {waPhone ? (
+                    <a
+                      href={`https://wa.me/${waPhone}?text=${encodeURIComponent(
+                        `Hola! Te escribo desde Bolívar Animal por la publicación de ${reporte.pet_name || 'la mascota'}.`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'block',
+                        textAlign: 'center',
+                        backgroundColor: '#3d7a58',
+                        color: '#ffffff',
+                        padding: '8px 12px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        textDecoration: 'none',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      💬 Contactar por WhatsApp
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: '#78655b' }}>Sin teléfono registrado</span>
+                  )}
                 </div>
-              </div>
-            </Popup>
-          </Marker>
+              </Popup>
+            </Marker>
+          </React.Fragment>
         );
       })}
     </MapContainer>

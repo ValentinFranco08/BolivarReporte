@@ -45,9 +45,11 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM EXIT
 
-# 1. Iniciar Backend (FastAPI en http://localhost:8000)
-echo -e "${GREEN}⚡ Iniciando Backend en http://localhost:8000 ...${NC}"
-(cd "$ROOT_DIR/backend" && PYTHONPATH=. "$UVICORN_BIN" app.main:app --reload --port 8000) &
+BACKEND_PORT="${PORT:-8001}"
+
+# 1. Iniciar Backend (FastAPI en http://localhost:8001)
+echo -e "${GREEN}⚡ Iniciando Backend en http://localhost:${BACKEND_PORT} ...${NC}"
+(cd "$ROOT_DIR/backend" && PYTHONPATH=. "$UVICORN_BIN" app.main:app --reload --host 0.0.0.0 --port "$BACKEND_PORT") &
 BACKEND_PID=$!
 
 # 2. Iniciar Frontend (Next.js en http://localhost:3000)
@@ -58,8 +60,8 @@ FRONTEND_PID=$!
 echo -e "${BLUE}----------------------------------------------${NC}"
 echo -e "${GREEN}✨ Ambos servidores están corriendo en simultáneo:${NC}"
 echo -e "   • Frontend:          ${CYAN}http://localhost:3000${NC}"
-echo -e "   • Backend API:       ${CYAN}http://localhost:8000${NC}"
-echo -e "   • Swagger Docs:      ${CYAN}http://localhost:8000/docs${NC}"
+echo -e "   • Backend API:       ${CYAN}http://localhost:${BACKEND_PORT}${NC}"
+echo -e "   • Swagger Docs:      ${CYAN}http://localhost:${BACKEND_PORT}/docs${NC}"
 echo -e "${BLUE}----------------------------------------------${NC}"
 echo -e "Presioná ${YELLOW}Ctrl + C${NC} en esta terminal para detener ambos."
 echo ""

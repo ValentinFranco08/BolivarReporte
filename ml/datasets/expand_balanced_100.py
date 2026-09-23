@@ -45,97 +45,49 @@ CATEGORIES = [
     "animals_animal_perdido",
     "animals_animal_suelto",
     "animals_posible_animal_herido",
-    "urban_arbol_caido",
-    "urban_bache",
-    "urban_basura",
-    "urban_calle_deteriorada",
-    "urban_luminaria_danada",
-    "urban_microbasural",
-    "urban_perdida_agua",
-    "urban_senalizacion_danada",
 ]
 
-ANIMAL_CATS = [c for c in CATEGORIES if c.startswith("animals_")]
+ANIMAL_CATS = CATEGORIES
 
 BING_QUERIES = {
     "animals_animal_abandonado": [
-        "perro abandonado calle argentina foto",
-        "perro atado arbol abandonado",
-        "cachorro abandonado caja calle",
+        "perro callejero atado abandonado argentina",
+        "cachorro perro abandonado caja argentina",
+        "gato callejero desnutrido abandonado",
     ],
     "animals_animal_en_riesgo": [
-        "perro en la ruta banquina peligro foto",
-        "animal atrapado rejas rescate",
-        "perro autopista argentina",
+        "perro caminando por autopista ruta argentina",
+        "perro callejero atrapado zanja",
+        "gato en techo peligro",
     ],
     "animals_animal_encontrado": [
-        "perro encontrado plaza collar foto",
-        "gato encontrado patio collar",
-        "perro hallado calle barrio",
+        "perro retenido atado patio collar",
+        "perro mestizo encontrado resguardado",
+        "gato rescatado provisorio encontrado",
     ],
     "animals_animal_perdido": [
-        "perro perdido cartel calle argentina",
-        "mascota perdida perro barrio",
-        "perro desorientado vereda",
+        "perro caniche perdido calle argentina",
+        "perro labrador perdido buscando dueño",
+        "gato domestico asustado desorientado calle",
     ],
     "animals_animal_suelto": [
-        "perro suelto vereda barrio argentina",
-        "caballo suelto calle ciudad",
-        "perro callejero deambulando asfalto",
+        "perro callejero durmiendo vereda argentina",
+        "perro comunitario plaza argentina",
+        "perro mestizo caminando por la calle suelto",
     ],
     "animals_posible_animal_herido": [
-        "perro herido calle rescate foto",
-        "perro rengo callejero lastimado",
-        "gato atropellado vereda",
-    ],
-    "urban_arbol_caido": [
-        "arbol caido calle tormenta argentina foto",
-        "arbol caido sobre auto vereda",
-        "arbol derribado viento asfalto",
-    ],
-    "urban_bache": [
-        "bache profundo asfalto calle argentina foto",
-        "pozo en la calzada bacheo",
-        "pothole asphalt street close up",
-    ],
-    "urban_basura": [
-        "bolsas de basura vereda esquina argentina",
-        "basura acumulada calle contenedor",
-        "litter garbage bags sidewalk photo",
-    ],
-    "urban_calle_deteriorada": [
-        "pavimento roto grietas calle argentina",
-        "calle deteriorada asfalto levantado",
-        "cracked damaged road surface photo",
-    ],
-    "urban_luminaria_danada": [
-        "luminaria publica rota poste calle",
-        "farol caido alumbrado publico",
-        "broken street light pole damaged",
-    ],
-    "urban_microbasural": [
-        "microbasural baldio escombros argentina",
-        "basural informal esquina barrio",
-        "illegal dumping pile garbage lot photo",
-    ],
-    "urban_perdida_agua": [
-        "perdida de agua asfalto calle argentina",
-        "caño roto agua brotando vereda",
-        "burst water main street geyser photo",
-    ],
-    "urban_senalizacion_danada": [
-        "cartel pare caido transito argentina",
-        "senal de transito doblada chocada",
-        "broken bent traffic sign pole photo",
+        "perro rengo callejero lastimado argentina",
+        "perro atropellado herido en la calle",
+        "gato callejero herido lastimado",
     ],
 }
 
 ANIMAL_POOL_QUERIES = [
-    "perro callejero vereda argentina foto",
-    "stray dog street sidewalk photo",
-    "gato callejero calle barrio",
-    "stray cat urban street photo",
-    "perro mestizo calle asfalto",
+    "perro mestizo callejero argentina fotos",
+    "perros comunitarios plazas argentina",
+    "gato callejero barrio argentina",
+    "perro galgo callejero suelto",
+    "perro dogo callejero buscando comida",
 ]
 
 
@@ -528,13 +480,6 @@ def main() -> None:
         print(f"  existentes {cat}: {len(keep_existing[cat])}")
 
     sourced: dict[str, list[Path]] = {c: [] for c in CATEGORIES}
-
-    hf = try_huggingface_road_issues()
-    for cat, files in hf.items():
-        sourced[cat].extend(files)
-
-    taco = try_taco()
-    sourced["urban_basura"].extend(taco)
 
     still_needed: dict[str, int] = {}
     preview_fps = set(used_fps)

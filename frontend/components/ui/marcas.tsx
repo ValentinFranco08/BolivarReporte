@@ -158,3 +158,101 @@ export function NumeroParcela({
     </span>
   );
 }
+
+// ─── Tipo de Reporte Animal ──────────────────────────────────────────────────
+
+export type TipoAnimalBadge = 'perdido' | 'encontrado' | 'alerta_cebo' | 'en_transito' | 'adopcion';
+
+const ESTILO_TIPO_ANIMAL: Record<TipoAnimalBadge, { clases: string; etiqueta: string }> = {
+  perdido: {
+    clases: 'border-sello-500/60 bg-sello-100 text-sello-700',
+    etiqueta: 'Perdido',
+  },
+  encontrado: {
+    clases: 'border-tinta-400 bg-tinta-50 text-tinta-700',
+    etiqueta: 'Encontrado',
+  },
+  alerta_cebo: {
+    clases: 'border-sello-600 bg-sello-500 text-papel-alto font-semibold',
+    etiqueta: 'Alerta Cebo',
+  },
+  en_transito: {
+    clases: 'border-margen-600/50 bg-margen-100 text-margen-600',
+    etiqueta: 'En Tránsito',
+  },
+  adopcion: {
+    clases: 'border-visto-600/50 bg-visto-100 text-visto-700',
+    etiqueta: 'En Adopción',
+  },
+};
+
+export function MarcaTipoAnimal({
+  tipo,
+  tamano = 'normal',
+}: {
+  tipo: TipoAnimalBadge | string;
+  tamano?: 'normal' | 'grande';
+}) {
+  const conf =
+    ESTILO_TIPO_ANIMAL[tipo as TipoAnimalBadge] ?? ESTILO_TIPO_ANIMAL.perdido;
+  const pad = tamano === 'grande' ? 'px-3 py-1 text-xs' : 'px-2 py-0.5 text-[0.6875rem]';
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-hoja border font-mono uppercase tracking-[0.08em] ${pad} ${conf.clases}`}
+    >
+      {conf.etiqueta}
+    </span>
+  );
+}
+
+// ─── Estado de Salud Animal ──────────────────────────────────────────────────
+
+export type EstadoSaludBadge = 'sano' | 'lastimado' | 'sintomas_envenenamiento' | 'con_collar';
+
+const ESTILO_SALUD_ANIMAL: Record<EstadoSaludBadge, { clases: string; etiqueta: string }> = {
+  sano: {
+    clases: 'border-visto-600/40 bg-visto-100 text-visto-700',
+    etiqueta: 'Buen estado',
+  },
+  lastimado: {
+    clases: 'border-sello-500/50 bg-sello-100 text-sello-700',
+    etiqueta: 'Lastimado',
+  },
+  sintomas_envenenamiento: {
+    clases: 'border-sello-700 bg-sello-600 text-papel-alto font-bold',
+    etiqueta: 'Posible Intoxicación',
+  },
+  con_collar: {
+    clases: 'border-tinta-300 bg-tinta-50 text-tinta-700',
+    etiqueta: 'Tiene collar',
+  },
+};
+
+export function MarcaSaludAnimal({ estado }: { estado: EstadoSaludBadge | string | null | undefined }) {
+  if (!estado) return null;
+  const conf = ESTILO_SALUD_ANIMAL[estado as EstadoSaludBadge];
+  if (!conf) return null;
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-hoja border px-2 py-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.08em] ${conf.clases}`}
+    >
+      {conf.etiqueta}
+    </span>
+  );
+}
+
+// ─── Marcas de registro en esquinas (Hoja de Mensura) ────────────────────────
+
+export function MarcasDeEsquina({ className = '' }: { className?: string }) {
+  const comun = 'pointer-events-none absolute size-4 border-tinta-600/25';
+  return (
+    <div aria-hidden className={className}>
+      <span className={`${comun} left-3 top-3 border-l border-t`} />
+      <span className={`${comun} right-3 top-3 border-r border-t`} />
+      <span className={`${comun} bottom-3 left-3 border-b border-l`} />
+      <span className={`${comun} bottom-3 right-3 border-b border-r`} />
+    </div>
+  );
+}

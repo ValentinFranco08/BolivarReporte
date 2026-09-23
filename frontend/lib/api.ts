@@ -6,7 +6,7 @@
 import type { Estado, Prioridad } from './taxonomy';
 
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:8000';
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:8001';
 
 /** `image_path` viene relativo (`/uploads/<uuid>.jpg`); el host lo compone el cliente. */
 export function urlDeImagen(imagePath: string | null | undefined): string | null {
@@ -32,6 +32,10 @@ export interface PrediccionAPI {
   confidence: number;
 }
 
+export type TipoReporteAnimal = 'perdido' | 'encontrado' | 'alerta_cebo' | 'en_transito' | 'adopcion' | 'comunitario';
+export type TipoMascota = 'perro' | 'gato' | 'otro';
+export type EstadoSaludMascota = 'sano' | 'lastimado' | 'sintomas_envenenamiento' | 'con_collar';
+
 export interface Reporte {
   id: number;
   description: string | null;
@@ -45,6 +49,27 @@ export interface Reporte {
   is_novel_category?: boolean;
   category: CategoriaAPI | null;
   prediction: PrediccionAPI | null;
+  report_type?: TipoReporteAnimal;
+  pet_type?: TipoMascota;
+  pet_name?: string | null;
+  pet_breed?: string | null;
+  color_description?: string | null;
+  health_status?: EstadoSaludMascota;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  is_resolved?: boolean;
+}
+
+export interface PetMatchCandidate {
+  report: Reporte;
+  visual_similarity: number;
+  distance_km: number;
+  combined_score: number;
+}
+
+export interface PetMatchResponse {
+  matches: PetMatchCandidate[];
+  total_checked: number;
 }
 
 export interface Clasificacion {
@@ -83,6 +108,42 @@ export interface Usuario {
   name: string;
   email: string;
   role: 'citizen' | 'admin';
+}
+
+export interface MascotaComunitaria {
+  id: number;
+  pet_name: string;
+  image_path: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  created_at: string;
+  pet_type?: TipoMascota;
+  pet_breed?: string | null;
+  color_description?: string | null;
+}
+
+export interface RegistroRemum {
+  id: number;
+  user_id: number;
+  qr_code_id: string;
+  pet_name: string;
+  pet_type?: string | null;
+  pet_breed?: string | null;
+  color_description?: string | null;
+  image_path?: string | null;
+  address?: string | null;
+  chip_number?: string | null;
+  status: 'a_salvo' | 'extraviado';
+  detail?: string;
+  godparents?: { name: string; task: string }[];
+  health_events?: unknown[];
+}
+
+export interface EventoSaludRemum {
+  title: string;
+  description?: string | null;
+  event_date: string;
 }
 
 // ─── Errores ──────────────────────────────────────────────────────────────────
@@ -186,6 +247,10 @@ export function listarReportes(): Promise<Reporte[]> {
   return pedir<Reporte[]>('/api/reports', { cache: 'no-store' });
 }
 
+export function listarComunitarios(): Promise<MascotaComunitaria[]> {
+  return pedir<MascotaComunitaria[]>('/api/remum/comunitarios', { cache: 'no-store' });
+}
+
 export function analizar(file: File, texto: string): Promise<RespuestaPrediccion> {
   const form = new FormData();
   form.append('file', file);
@@ -205,6 +270,14 @@ export interface NuevoReporte {
   is_novel_category?: boolean;
   suggested_area?: string;
   embedding?: number[] | null;
+  report_type?: TipoReporteAnimal;
+  pet_type?: TipoMascota;
+  pet_name?: string | null;
+  pet_breed?: string | null;
+  color_description?: string | null;
+  health_status?: EstadoSaludMascota;
+  contact_name?: string | null;
+  contact_phone?: string | null;
 }
 
 export function crearReporte(token: string, reporte: NuevoReporte): Promise<Reporte> {
@@ -215,10 +288,25 @@ export function crearReporte(token: string, reporte: NuevoReporte): Promise<Repo
   });
 }
 
+export function obtenerMatchesMascota(reportId: number): Promise<PetMatchResponse> {
+  return pedir<PetMatchResponse>(`/api/reports/${reportId}/matches`);
+}
+
+export function obtenerAlertasPeligro(): Promise<Reporte[]> {
+  return pedir<Reporte[]>('/api/alerts/active');
+}
+
+export function resolverReporte(token: string, id: number): Promise<Reporte> {
+  return pedir<Reporte>(`/api/reports/${id}/resolve`, {
+    method: 'PATCH',
+    headers: conAuth(token, { 'Content-Type': 'application/json' }),
+  });
+}
+
 export function actualizarReporte(
   token: string,
   id: number,
-  cambios: { status?: Estado; priority?: Prioridad },
+  cambios: { status?: Estado; priority?: Prioridad; is_resolved?: boolean },
 ): Promise<Reporte> {
   return pedir<Reporte>(`/api/reports/${id}`, {
     method: 'PATCH',

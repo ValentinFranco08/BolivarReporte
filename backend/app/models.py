@@ -25,6 +25,34 @@ class ReportPriority(str, enum.Enum):
     HIGH = "alta"
     CRITICAL = "critica"
 
+class AnimalReportType(str, enum.Enum):
+    PERDIDO = "perdido"
+    ENCONTRADO = "encontrado"
+    ALERTA_CEBO = "alerta_cebo"
+    EN_TRANSITO = "en_transito"
+    ADOPCION = "adopcion"
+
+class PetType(str, enum.Enum):
+    PERRO = "perro"
+    GATO = "gato"
+    OTRO = "otro"
+
+class PetHealthStatus(str, enum.Enum):
+    SANO = "sano"
+    LASTIMADO = "lastimado"
+    SINTOMAS_ENVENENAMIENTO = "sintomas_envenenamiento"
+    CON_COLLAR = "con_collar"
+
+class RemumStatus(str, enum.Enum):
+    A_SALVO = "a_salvo"
+    EXTRAVIADO = "extraviado"
+
+class HealthEventType(str, enum.Enum):
+    ANTIRRABICA = "antirrabica"
+    CASTRACION = "castracion"
+    DESPARASITACION = "desparasitacion"
+    OTRO = "otro"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -38,6 +66,54 @@ class User(Base):
 
     reports = relationship("Report", back_populates="user")
     feedbacks = relationship("Feedback", back_populates="reviewer")
+    remum_records = relationship("RemumRecord", back_populates="user")
+
+class RemumRecord(Base):
+    __tablename__ = "remum_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    pet_name = Column(String, nullable=False)
+    pet_type = Column(Enum(PetType), default=PetType.PERRO)
+    pet_breed = Column(String, nullable=True)
+    color_description = Column(String, nullable=True)
+    image_path = Column(String, nullable=True)
+    chip_number = Column(String, nullable=True)
+    qr_code_id = Column(String, unique=True, index=True, nullable=False)
+    is_community_pet = Column(Boolean, default=False)
+    status = Column(Enum(RemumStatus), default=RemumStatus.A_SALVO)
+    address = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="remum_records")
+    health_events = relationship("RemumHealthEvent", back_populates="remum_record", cascade="all, delete-orphan")
+    godparents = relationship("RemumGodparent", back_populates="remum_record", cascade="all, delete-orphan")
+
+class RemumHealthEvent(Base):
+    __tablename__ = "remum_health_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    remum_record_id = Column(Integer, ForeignKey("remum_records.id"), nullable=False)
+    event_type = Column(Enum(HealthEventType), nullable=False)
+    date = Column(DateTime(timezone=True), nullable=False)
+    expiration_date = Column(DateTime(timezone=True), nullable=True)
+    certificate_number = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    remum_record = relationship("RemumRecord", back_populates="health_events")
+
+class RemumGodparent(Base):
+    __tablename__ = "remum_godparents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    remum_record_id = Column(Integer, ForeignKey("remum_records.id"), nullable=False)
+    name = Column(String, nullable=False)
+    task = Column(String, nullable=False)
+
+    remum_record = relationship("RemumRecord", back_populates="godparents")
 
 class Category(Base):
     __tablename__ = "categories"
@@ -68,7 +144,18 @@ class Report(Base):
     status = Column(Enum(ReportStatus), default=ReportStatus.REPORTADO)
     priority = Column(Enum(ReportPriority), default=ReportPriority.MEDIUM)
     is_novel_category = Column(Boolean, default=False) # True si el reporte inauguró una problemática nueva
-    embedding = Column(Text, nullable=True) # Vector multimodal del reporte para active learning y re-cálculo
+    embedding = Column(Text, nullable=True) # Vector multimodal / visual del reporte para matching
+    
+    # Campos especializados de Protección Animal y Alertas
+    report_type = Column(Enum(AnimalReportType), default=AnimalReportType.PERDIDO, nullable=True)
+    pet_type = Column(Enum(PetType), default=PetType.PERRO, nullable=True)
+    pet_name = Column(String, nullable=True)
+    pet_breed = Column(String, nullable=True)
+    color_description = Column(String, nullable=True)
+    health_status = Column(Enum(PetHealthStatus), default=PetHealthStatus.SANO, nullable=True)
+    contact_name = Column(String, nullable=True)
+    contact_phone = Column(String, nullable=True)
+    is_resolved = Column(Boolean, default=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -262,6 +262,79 @@ class BolivarAI:
                 "model_version": self.model_version
             }
 
+    def extract_pet_embedding(self, image_bytes: bytes) -> list:
+        """
+        Extrae un vector representativo L2-normalizado de 768 dimensiones para
+        cotejo visual de mascotas (Pet Re-Identification).
+        """
+        try:
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            
+            # Si el modelo multimodal está listo, usar su embedding
+            if self.ready:
+                pixel_values = self.transform(image).unsqueeze(0).to(self.device)
+                encoding = self.tokenizer(
+                    "foto de animal perro gato mascota",
+                    padding="max_length",
+                    truncation=True,
+                    max_length=MAX_TOKEN_LENGTH,
+                    return_tensors="pt",
+                )
+                input_ids = encoding["input_ids"].to(self.device)
+                attention_mask = encoding["attention_mask"].to(self.device)
+                with torch.no_grad():
+                    _, embeddings = self.model(pixel_values, input_ids, attention_mask, return_embeddings=True)
+                    return embeddings[0].cpu().tolist()
+            
+            # Fallback perceptivo ultrarrápido y determinista (768 dimensiones = 16x16 cuadrantes x 3 RGB)
+            resized = image.resize((16, 16))
+            import numpy as np
+            arr = np.array(resized, dtype=np.float32) / 255.0  # (16, 16, 3)
+            flat = arr.flatten()  # 768 valores
+            norm = np.linalg.norm(flat)
+            if norm > 0:
+                flat = flat / norm
+            return flat.tolist()
+        except Exception as e:
+            print(f"Error extrayendo embedding de mascota: {e}")
+            # Vector nulo de 768 floats
+            return [0.0] * 768
+
+
+import math
+
+def haversine_km(lat1: Optional[float], lon1: Optional[float], lat2: Optional[float], lon2: Optional[float]) -> float:
+    """Calcula la distancia geodésica en kilómetros entre dos coordenadas."""
+    if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
+        return 999.0
+    R = 6371.0  # Radio medio de la Tierra en km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return round(R * c, 2)
+
+def calculate_cosine_similarity(vec1: list, vec2: list) -> float:
+    """Calcula la similitud coseno entre dos vectores normalizados y la reescala para percepción humana."""
+    if not vec1 or not vec2 or len(vec1) != len(vec2):
+        return 0.0
+    dot = sum(a * b for a, b in zip(vec1, vec2))
+    raw_sim = float(dot)
+    # Los embeddings de ViT suelen estar agrupados (baseline ~0.65 - 0.70).
+    # Reescalamos el rango [0.65, 1.0] a [0.0, 1.0] para que la UI muestre porcentajes realistas.
+    scaled_sim = max(0.0, (raw_sim - 0.65) / 0.35)
+    return min(1.0, scaled_sim)
+
+def calculate_pet_match_score(visual_sim: float, distance_km: float, max_radius_km: float = 5.0) -> float:
+    """
+    Score combinado:
+    70% similitud visual de rasgos + 30% factor de cercanía geográfica en Bolívar.
+    """
+    norm_vis = max(0.0, min(1.0, visual_sim))
+    geo_factor = max(0.0, 1.0 - (distance_km / max_radius_km)) if distance_km <= max_radius_km else 0.0
+    combined = (0.70 * norm_vis) + (0.30 * geo_factor)
+    return round(combined, 3)
+
 
 # Instancia singleton
 ai_service = BolivarAI()

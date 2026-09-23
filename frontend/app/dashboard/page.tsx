@@ -37,6 +37,7 @@ import {
   buscarCategoria,
   type Estado,
   type Prioridad,
+  type Area,
 } from '@/lib/taxonomy';
 
 /**
@@ -112,7 +113,7 @@ export default function Panel() {
       setPendientes((prev) => prev.filter((c) => c.id !== id));
       setMensajeExito('Categoría aprobada oficialmente en el sistema.');
       setTimeout(() => setMensajeExito(null), 4000);
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof ErrorAPI ? err.message : 'Error al aprobar categoría');
     } finally {
       setAccionCargando(false);
@@ -130,7 +131,7 @@ export default function Panel() {
       setTimeout(() => setMensajeExito(null), 4000);
       const r = await listarReportes();
       setReportes(r);
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof ErrorAPI ? err.message : 'Error al fusionar categorías');
     } finally {
       setAccionCargando(false);
@@ -175,11 +176,12 @@ export default function Panel() {
         {/* Encabezado de plancha */}
         <div className="flex flex-col gap-5 border-b border-grafito-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-[-0.02em] text-grafito-900 sm:text-3xl">
-              Cola de reportes
+            <p className="rotulo mb-2">Mesa operativa · acceso municipal</p>
+            <h1 className="text-3xl font-extrabold tracking-[-0.04em] text-grafito-900 sm:text-4xl">
+              Cola de rastreo
             </h1>
             <p className="mt-1.5 text-[0.9375rem] text-grafito-600">
-              Reportes ciudadanos de Bolívar, listos para gestión.
+              Priorizá fichas, verificá coincidencias y registrá cada resolución.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
@@ -234,7 +236,7 @@ export default function Panel() {
             }`}
           >
             <Icono nombre="hoja" className="size-4" />
-            Cola de Reportes ({reportes.length})
+            Fichas en cola ({reportes.length})
           </button>
           <button
             type="button"
@@ -246,7 +248,7 @@ export default function Panel() {
             }`}
           >
             <Icono nombre="compas" className="size-4" />
-            Categorías Propuestas por IA
+            Clasificación pendiente
             {pendientes.length > 0 ? (
               <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[0.6875rem] font-bold text-white">
                 {pendientes.length}
@@ -461,7 +463,7 @@ export default function Panel() {
                           </span>
                         </td>
                         <td className="px-3 py-3">
-                          <MarcaArea area={cat.area as any} />
+                          <MarcaArea area={cat.area as Area} />
                         </td>
                         <td className="px-3 py-3 text-xs text-grafito-600 max-w-[30ch] truncate">
                           {cat.description || 'Sin descripción'}
