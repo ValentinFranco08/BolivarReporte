@@ -25,9 +25,10 @@ from ml.taxonomy import LABEL_TO_IDX, IDX_TO_LABEL, NUM_CLASSES, classify_label
 # Configuración
 # -----------------------------------------------------------------------
 TOKENIZER_NAME  = "bertin-project/bertin-roberta-base-spanish"
-CHECKPOINT_PATH = os.path.join(PROJECT_ROOT, "ml/checkpoints/multimodal/best_fase3.pt")
-# Fallback a fase2 o fase1 si la fase3 no existe aún
+CHECKPOINT_PATH = os.path.join(PROJECT_ROOT, "ml/checkpoints/multimodal/best_multimodal_finetuned.pt")
+# Fallback a fases previas si no existe el finetuneado completo
 FALLBACK_PATHS = [
+    os.path.join(PROJECT_ROOT, "ml/checkpoints/multimodal/best_fase3.pt"),
     os.path.join(PROJECT_ROOT, "ml/checkpoints/multimodal/best_fase2.pt"),
     os.path.join(PROJECT_ROOT, "ml/checkpoints/multimodal/best_fase1.pt"),
 ]

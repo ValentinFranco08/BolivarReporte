@@ -27,12 +27,12 @@ class ViTEncoder(nn.Module):
         return outputs.last_hidden_state
 
     def unfreeze_last_n_layers(self, n_layers=2):
-        """Descongela las últimas N capas del ViT (Para Fase 2/4)."""
-        # Descongelar el layer normalization final
-        for param in self.vit.layernorm.parameters():
-            param.requires_grad = True
+        """Descongela las últimas N capas del ViT y su LayerNorm final."""
+        if hasattr(self.vit, "layernorm") and self.vit.layernorm is not None:
+            for param in self.vit.layernorm.parameters():
+                param.requires_grad = True
 
-        # Las capas del ViT están en self.vit.layers (no encoder.layer)
-        for layer in self.vit.layers[-n_layers:]:
+        layers = self.vit.layers if hasattr(self.vit, "layers") else getattr(self.vit, "encoder", self.vit).layer
+        for layer in layers[-n_layers:]:
             for param in layer.parameters():
                 param.requires_grad = True

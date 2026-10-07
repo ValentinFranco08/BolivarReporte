@@ -19,7 +19,7 @@ export default function InfografiaPage() {
               <div className="flex items-center gap-2">
                 <span className="rotulo text-terracota">Proyecto de Inteligencia Artificial Cívica</span>
                 <span className="rounded bg-salvia-50 px-2 py-0.5 font-mono text-[10px] font-bold text-salvia border border-salvia">
-                  TEST ACCURACY: 90.9%
+                  TEST ACCURACY: 96.7% (FINE-TUNED)
                 </span>
               </div>
               <h1 className="mt-2 text-3xl font-extrabold tracking-[-.04em] sm:text-5xl">
@@ -83,9 +83,9 @@ export default function InfografiaPage() {
         <section className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="ficha-vecinal p-5 border-l-4 border-l-terracota">
             <span className="rotulo block">Exactitud del Modelo</span>
-            <div className="mt-2 text-4xl font-extrabold tracking-tight text-terracota">90.9%</div>
+            <div className="mt-2 text-4xl font-extrabold tracking-tight text-terracota">96.7%</div>
             <p className="mt-1 text-xs text-corteza-suave">
-              Accuracy comprobada en conjunto de test sobre 6 clases balanceadas.
+              Accuracy comprobada en test con fine-tuning progresivo (Macro F1: 0.942).
             </p>
           </div>
 
@@ -149,7 +149,7 @@ export default function InfografiaPage() {
                 <span className="rotulo text-salvia">Solución Técnica</span>
                 <h4 className="mt-2 text-base font-bold">Fusión Atencional Guiada</h4>
                 <p className="mt-2 text-xs leading-relaxed text-corteza-suave">
-                  El texto aportado por el vecino guía la inspección visual de la red neuronal mediante atención cruzada, elevando la precisión al 90.9% frente a modelos de una sola modalidad.
+                  El texto aportado por el vecino guía la inspección visual de la red neuronal mediante atención cruzada, alcanzando 96.7% de precisión tras el fine-tuning de ViT y RoBERTa.
                 </p>
               </div>
               <div className="ficha-vecinal p-6">
