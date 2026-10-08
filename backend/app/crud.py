@@ -283,8 +283,11 @@ def find_candidate_pet_matches(db: Session, target_report: models.Report, top_k:
             
             score = calculate_pet_match_score(vis_sim, dist_km, semantic_sim=sem_sim, max_radius_km=5.0)
 
-            # Candidato válido si la similitud visual es relevante o el score combinado supera el umbral
-            if vis_sim >= 0.25 or (vis_sim > 0.15 and sem_sim >= 0.70):
+            # Candidato admitido si:
+            # - Similitud visual relevante (vis_sim >= 0.20), O
+            # - Alta coincidencia de raza/pelaje (sem_sim >= 0.70) y afinidad global (score >= 0.30), O
+            # - Score combinado global >= 0.35
+            if vis_sim >= 0.20 or (sem_sim >= 0.70 and score >= 0.30) or score >= 0.35:
                 scored_candidates.append({
                     "report": cand,
                     "visual_similarity": round(vis_sim, 3),

@@ -354,12 +354,13 @@ def calculate_cosine_similarity(vec1: list, vec2: list) -> float:
     dot = sum(a * b for a, b in zip(vec1, vec2))
     raw_sim = float(dot)
     
-    # Los embeddings visuales de ViT multi-escala para perros de diferente raza rondan entre 0.20 y 0.38.
-    # Para el mismo perro rondan 0.70 a 1.00.
-    # Calibramos la proyección [0.38, 0.90] -> [0.0, 1.0].
-    if raw_sim <= 0.38:
+    # Los embeddings visuales de ViT multi-escala para animales no relacionados o de raza muy distinta rondan <= 0.25.
+    # Animales con rasgos o coloración similar, o distinta postura rondan 0.35 a 0.65.
+    # Mismo animal con foto idéntica o muy cercana ronda 0.75 a 1.00.
+    # Calibramos la proyección continua [0.25, 0.85] -> [0.0, 1.0].
+    if raw_sim <= 0.25:
         return 0.0
-    scaled = (raw_sim - 0.38) / (0.90 - 0.38)
+    scaled = (raw_sim - 0.25) / (0.85 - 0.25)
     return round(min(1.0, max(0.0, scaled)), 3)
 
 def normalize_text_tokens(text: Optional[str]) -> set:
