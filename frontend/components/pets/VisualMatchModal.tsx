@@ -195,24 +195,40 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
                 </div>
               </div>
 
-              {/* Barra de Afinidad Visual */}
+              {/* Barra de Afinidad Visual y Multimodal */}
               <div className="space-y-2 border-y border-borde-fuerte py-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-corteza">
-                    Registro de coincidencia
+                    Afinidad multimodal (ViT Auto-Crop + Rasgos)
                   </span>
                   <span className="estado-sello bg-terracota-50 border border-terracota-200 px-2.5 py-0.5 font-bold text-terracota">
-                    {Math.round(candidatoActual.visual_similarity * 100)}% de Similitud
+                    {Math.round(candidatoActual.combined_score * 100)}% Match global
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden bg-lino-suave">
                   <div
                     className="h-full bg-terracota transition-[width] duration-300"
                     style={{
-                      width: `${Math.round(candidatoActual.visual_similarity * 100)}%`,
+                      width: `${Math.round(candidatoActual.combined_score * 100)}%`,
                     }}
                   />
                 </div>
+                
+                {/* Desglose de factores */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                  <span className="rounded bg-white border border-borde-suave px-2 py-0.5 text-corteza font-medium">
+                    👁️ Similitud visual: <strong>{Math.round(candidatoActual.visual_similarity * 100)}%</strong>
+                  </span>
+                  {candidatoActual.semantic_similarity !== undefined && (
+                    <span className="rounded bg-white border border-borde-suave px-2 py-0.5 text-salvia-700 font-medium">
+                      🐾 Rasgos y pelaje: <strong>{Math.round(candidatoActual.semantic_similarity * 100)}%</strong>
+                    </span>
+                  )}
+                  <span className="rounded bg-white border border-borde-suave px-2 py-0.5 text-corteza-suave">
+                    📍 Distancia: <strong>{candidatoActual.distance_km} km</strong>
+                  </span>
+                </div>
+                
                 <p className="text-xs text-corteza-suave leading-relaxed pt-1">
                   Ubicación: a <strong>{candidatoActual.distance_km} km</strong> de donde se reportó
                   ({candidatoActual.report.address || 'Bolívar'}).

@@ -13,15 +13,15 @@ def test_haversine_bolivar():
     assert haversine_km(-36.2333, -61.1167, -36.2333, -61.1167) == 0.0
 
 def test_pet_match_score():
-    # Caso 1: Alta similitud visual (0.90) y distancia corta (0.5 km)
-    score_cerca = calculate_pet_match_score(0.90, 0.5, max_radius_km=5.0)
-    # 0.70 * 0.90 + 0.30 * 0.90 = 0.90
-    assert score_cerca >= 0.85
+    # Caso 1: Alta similitud visual (0.90), rasgos semánticos coincidentes (1.0) y distancia corta (0.5 km)
+    score_completo = calculate_pet_match_score(0.90, 0.5, semantic_sim=1.0, max_radius_km=5.0)
+    # 0.65 * 0.90 + 0.20 * 1.0 + 0.15 * 0.90 = 0.585 + 0.20 + 0.135 = 0.92
+    assert score_completo >= 0.90
 
-    # Caso 2: Alta similitud visual (0.90) pero muy lejos (10 km)
-    score_lejos = calculate_pet_match_score(0.90, 10.0, max_radius_km=5.0)
-    # 0.70 * 0.90 + 0.30 * 0 = 0.63
-    assert score_lejos == 0.63
+    # Caso 2: Alta similitud visual (0.90) sin rasgos semánticos (neutral 0.5) y lejos (10 km)
+    score_lejos = calculate_pet_match_score(0.90, 10.0, semantic_sim=0.5, max_radius_km=5.0)
+    # 0.65 * 0.90 + 0.20 * 0.5 + 0.15 * 0.0 = 0.585 + 0.10 = 0.685
+    assert 0.68 <= score_lejos <= 0.70
 
 def test_pet_embedding_extraction():
     img = Image.new("RGB", (100, 100), color="goldenrod")

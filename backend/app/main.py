@@ -60,6 +60,35 @@ def on_startup():
                 db.add(vecino_user)
             db.commit()
             print("✅ Usuarios iniciales verificados (admin@bolivar.gob.ar / vecino@bolivar.gob.ar).")
+
+            # Validador y migrador automático de espacio vectorial (Propuesta 4)
+            reports = db.query(models.Report).filter(models.Report.image_path.isnot(None)).all()
+            reindexed = 0
+            for r in reports:
+                fname = os.path.basename(r.image_path)
+                fpath = os.path.join(UPLOADS_DIR, fname)
+                if not os.path.exists(fpath):
+                    continue
+                needs_reindex = False
+                if not r.embedding:
+                    needs_reindex = True
+                else:
+                    try:
+                        emb = json.loads(r.embedding)
+                        if not isinstance(emb, list) or len(emb) != 768:
+                            needs_reindex = True
+                    except Exception:
+                        needs_reindex = True
+                if needs_reindex:
+                    try:
+                        with open(fpath, "rb") as f:
+                            r.embedding = json.dumps(ai_service.extract_pet_embedding(f.read()))
+                        reindexed += 1
+                    except Exception as err:
+                        print(f"⚠️ Error vectorizando imagen {fname}: {err}")
+            if reindexed > 0:
+                db.commit()
+                print(f"🔄 Validador vectorial: actualizados {reindexed} reportes al modelo de visión activo.")
         finally:
             db.close()
     except Exception as e:
@@ -186,7 +215,7 @@ async def predict(
 def create_report(
     submission: schemas.ReportSubmission,
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(auth.get_current_user) # Requiere login
+    current_user: Optional[models.User] = Depends(auth.get_current_user_optional) # Login opcional
 ):
     # Obtener category_id a partir del corrected_class o predicted_class
     final_class = submission.corrected_class if submission.corrected_class else submission.predicted_class
@@ -222,12 +251,19 @@ def create_report(
     if submission.category_id and submission.embedding:
         crud.update_category_centroid(db, submission.category_id, submission.embedding)
 
+    # Determinar user_id (si hay usuario autenticado se vincula, sino fallback al usuario vecino)
+    user_id = current_user.id if current_user else None
+    if user_id is None:
+        default_user = db.query(models.User).filter(models.User.role == models.UserRole.CITIZEN).first()
+        if default_user:
+            user_id = default_user.id
+
     # Crear reporte
     report = crud.create_report(
         db=db,
         report=submission,
         image_path=submission.image_path,
-        user_id=current_user.id,
+        user_id=user_id,
         is_novel_category=submission.is_novel_category or False,
         embedding=submission.embedding
     )
@@ -250,7 +286,7 @@ def create_report(
             prediction_id=saved_prediction.id,
             correct=not was_corrected,
             correct_class=submission.corrected_class if was_corrected else None,
-            reviewer_id=current_user.id
+            reviewer_id=user_id
         )
     
     # Refrescar para cargar las relationships
@@ -462,9 +498,12 @@ def merge_categories(
 @app.get("/api/remum/mis-mascotas", response_model=List[schemas.RemumResponse])
 def get_mis_mascotas(
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(auth.get_current_user)
+    current_user: Optional[models.User] = Depends(auth.get_current_user_optional)
 ):
+    if not current_user:
+        return []
     return db.query(models.RemumRecord).filter(models.RemumRecord.user_id == current_user.id).order_by(models.RemumRecord.created_at.desc()).all()
+
 @app.get("/api/remum/comunitarios", response_model=List[schemas.RemumResponse])
 def get_comunitarios(db: Session = Depends(database.get_db)):
     return db.query(models.RemumRecord).filter(
@@ -485,7 +524,7 @@ async def create_remum_record(
     longitude: Optional[float] = Form(None),
     file: UploadFile = File(None),
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(auth.get_current_user)
+    current_user: Optional[models.User] = Depends(auth.get_current_user_optional)
 ):
     image_path = None
     if file and file.filename:
@@ -507,7 +546,12 @@ async def create_remum_record(
         latitude=latitude,
         longitude=longitude
     )
-    return crud.create_remum_record(db, current_user.id, remum_create, image_path)
+    user_id = current_user.id if current_user else None
+    if user_id is None:
+        default_user = db.query(models.User).filter(models.User.role == models.UserRole.CITIZEN).first()
+        if default_user:
+            user_id = default_user.id
+    return crud.create_remum_record(db, user_id, remum_create, image_path)
 
 @app.post("/api/remum/{qr_code_id}/salud", response_model=schemas.HealthEventResponse)
 def add_health_event(

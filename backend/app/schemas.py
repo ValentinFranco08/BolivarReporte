@@ -123,6 +123,7 @@ class ReportResponse(ReportBase):
 class PetMatchCandidate(BaseModel):
     report: ReportResponse
     visual_similarity: float
+    semantic_similarity: Optional[float] = None
     distance_km: float
     combined_score: float
 

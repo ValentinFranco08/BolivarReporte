@@ -27,6 +27,9 @@ fi
 if command -v docker &> /dev/null && docker info &> /dev/null; then
     echo -e "${GREEN}🐘 Verificando PostgreSQL (Docker compose)...${NC}"
     (cd "$ROOT_DIR" && docker compose up -d db 2>/dev/null || true)
+    if [ -f "$ROOT_DIR/backend/scripts/sync_db.py" ]; then
+        (cd "$ROOT_DIR" && "$ROOT_DIR/venv/bin/python" backend/scripts/sync_db.py 2>/dev/null || true)
+    fi
 fi
 
 # Manejo de apagado limpio con Ctrl + C

@@ -63,6 +63,7 @@ export interface Reporte {
 export interface PetMatchCandidate {
   report: Reporte;
   visual_similarity: number;
+  semantic_similarity?: number;
   distance_km: number;
   combined_score: number;
 }
@@ -188,6 +189,9 @@ async function pedir<T>(ruta: string, init?: RequestInit): Promise<T> {
     throw new ErrorAPI('No pudimos conectar con el servidor. Revisá tu conexión.', 0);
   }
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== 'undefined') {
+      borrarToken();
+    }
     throw new ErrorAPI(mensajeSegunEstado(res.status, await extraerDetalle(res)), res.status);
   }
   if (res.status === 204) return undefined as T;
@@ -280,10 +284,14 @@ export interface NuevoReporte {
   contact_phone?: string | null;
 }
 
-export function crearReporte(token: string, reporte: NuevoReporte): Promise<Reporte> {
+export function crearReporte(token: string | null | undefined, reporte: NuevoReporte): Promise<Reporte> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   return pedir<Reporte>('/api/reports', {
     method: 'POST',
-    headers: conAuth(token, { 'Content-Type': 'application/json' }),
+    headers,
     body: JSON.stringify(reporte),
   });
 }

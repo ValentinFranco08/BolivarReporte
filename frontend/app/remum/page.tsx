@@ -16,11 +16,21 @@ export default function RemumIndexPage() {
       fetch(`${API_URL}/api/remum/mis-mascotas`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          setSinSesion(true);
+          return [];
+        }
+        return res.ok ? res.json() : [];
+      })
       .then(data => {
         if (Array.isArray(data)) {
           setMascotas(data);
         }
+      })
+      .catch(() => {
+        setSinSesion(true);
       })
       .finally(() => setCargando(false));
     } else {

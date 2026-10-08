@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Icono } from '@/components/ui/Icono';
+import { API_URL } from '@/lib/api';
 
 export default function NuevoEmpadronamientoPage() {
   const router = useRouter();
@@ -21,12 +22,7 @@ export default function NuevoEmpadronamientoPage() {
     }
   }, []);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login?volver=/remum/nuevo');
-    }
-  }, [router]);
+  // No forzamos bloqueo de login para permitir empadronar mascotas comunitarias/vecinales
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,20 +59,22 @@ export default function NuevoEmpadronamientoPage() {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Debes iniciar sesión para registrar una mascota.');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch('http://localhost:8001/api/remum/', {
+      const response = await fetch(`${API_URL}/api/remum/`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Error al registrar la mascota en REMUM. Asegúrate de estar logueado.');
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+        }
+        throw new Error('Error al registrar la mascota en REMUM. Asegúrate de que los datos sean correctos.');
       }
 
       const data = await response.json();

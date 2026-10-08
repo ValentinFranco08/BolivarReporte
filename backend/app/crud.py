@@ -229,11 +229,16 @@ def get_active_danger_alerts(db: Session):
 
 def find_candidate_pet_matches(db: Session, target_report: models.Report, top_k: int = 5) -> List[dict]:
     """
-    Busca coincidencias de mascotas por similitud visual y distancia en Bolívar.
+    Busca coincidencias de mascotas por similitud visual, rasgos semánticos y distancia en Bolívar.
     Si el reporte es PERDIDO -> busca en ENCONTRADO / EN_TRANSITO.
     Si el reporte es ENCONTRADO -> busca en PERDIDO.
     """
-    from .ai_service import calculate_cosine_similarity, haversine_km, calculate_pet_match_score
+    from .ai_service import (
+        calculate_cosine_similarity,
+        haversine_km,
+        calculate_pet_match_score,
+        calculate_semantic_similarity
+    )
 
     if not target_report.embedding:
         return []
@@ -265,13 +270,25 @@ def find_candidate_pet_matches(db: Session, target_report: models.Report, top_k:
             cand_emb = json.loads(cand.embedding)
             vis_sim = calculate_cosine_similarity(target_emb, cand_emb)
             dist_km = haversine_km(target_report.latitude, target_report.longitude, cand.latitude, cand.longitude)
-            score = calculate_pet_match_score(vis_sim, dist_km, max_radius_km=5.0)
+            
+            # Comparar rasgos semánticos de pelaje, raza y descripción
+            sem_sim = calculate_semantic_similarity(
+                target_color=target_report.color_description,
+                target_breed=target_report.pet_breed,
+                target_desc=target_report.description,
+                cand_color=cand.color_description,
+                cand_breed=cand.pet_breed,
+                cand_desc=cand.description
+            )
+            
+            score = calculate_pet_match_score(vis_sim, dist_km, semantic_sim=sem_sim, max_radius_km=5.0)
 
-            # Filtrar si la similitud visual es muy baja (< 0.40)
-            if vis_sim >= 0.35:
+            # Candidato válido si la similitud visual es relevante o el score combinado supera el umbral
+            if vis_sim >= 0.25 or (vis_sim > 0.15 and sem_sim >= 0.70):
                 scored_candidates.append({
                     "report": cand,
                     "visual_similarity": round(vis_sim, 3),
+                    "semantic_similarity": round(sem_sim, 3),
                     "distance_km": dist_km,
                     "combined_score": score
                 })

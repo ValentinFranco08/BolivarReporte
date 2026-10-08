@@ -89,7 +89,7 @@ export default function RemumPage() {
           name: 'Vos (Vecino Voluntario)',
           task: 'Paseo y seguimiento vecinal'
         };
-        const res = await fetch(`http://localhost:8001/api/remum/${qrId}/padrinos`, {
+        const res = await fetch(`${API_URL}/api/remum/${qrId}/padrinos`, {
           method: 'POST',
           headers: { 
             'Authorization': `Bearer ${token}`,
@@ -116,7 +116,7 @@ export default function RemumPage() {
         description: nuevaVacunaDetalle,
         event_date: new Date().toISOString()
       };
-      const res = await fetch(`http://localhost:8001/api/remum/${qrId}/salud`, {
+      const res = await fetch(`${API_URL}/api/remum/${qrId}/salud`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,

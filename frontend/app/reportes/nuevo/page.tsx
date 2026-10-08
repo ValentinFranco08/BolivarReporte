@@ -89,10 +89,6 @@ function FormularioNuevoReporte() {
     }
 
     const token = leerToken();
-    if (!token) {
-      router.push('/login?volver=' + encodeURIComponent('/reportes/nuevo'));
-      return;
-    }
 
     setEnviando(true);
     setError(null);
