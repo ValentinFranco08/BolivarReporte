@@ -1,171 +1,192 @@
-# Reporte Bolívar
+# Reporte Bolívar & Bolívar Animal
 
-**Sistema inteligente de gestión de problemáticas ciudadanas para Bolívar, Buenos Aires.**
+**Plataforma cívica inteligente y ecosistema de rescate y registro animal para el Municipio de Bolívar, Buenos Aires.**
 
-> Transforma reportes informales en información estructurada, clasificable y accionable mediante Inteligencia Artificial multimodal.
+> Transforma reportes comunitarios informales en información estructurada, accionable y con seguimiento oficial mediante una red neuronal multimodal propia (Visión + Lenguaje).
 
----
-
-## ¿Qué es?
-
-**Reporte Bolívar** es una plataforma web donde los ciudadanos reportan problemáticas mediante foto + descripción + ubicación. Una red neuronal multimodal (ViT + RoBERTa + Cross-Attention) analiza conjuntamente la imagen y el texto para clasificar automáticamente el reporte y asignarle una prioridad.
-
-A diferencia de publicar en una red social, cada reporte tiene un ciclo de vida gestionable. La IA describe y prioriza situaciones; no determina infracciones legales ni reemplaza la normativa municipal.
-
-```
-REPORTADO → CLASIFICADO → PENDIENTE → EN_PROCESO → RESUELTO
-```
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![PyTorch](https://img.shields.io/badge/Deep%20Learning-PyTorch%20%2F%20Transformers-EE4C2C?style=flat&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
 ---
 
-## Stack
+## 🧭 ¿Qué es?
 
-| Capa | Tecnología |
-|---|---|
-| Frontend | Next.js + TypeScript + Tailwind CSS |
-| Backend | Python + FastAPI + SQLAlchemy |
-| Base de datos | PostgreSQL |
-| Deep Learning | PyTorch + Hugging Face Transformers |
-| Vision | `google/vit-base-patch16-224` |
-| Lenguaje | `bertin-project/bertin-roberta-base-spanish` |
-| Fusión | Cross-Attention (`nn.MultiheadAttention`) |
-| Infra | Docker + Linux VPS |
+**Reporte Bolívar** es una solución integral diseñada para resolver dos desafíos críticos de la comunidad:
+
+1. **Gestión de Problemáticas Urbanas:** Los vecinos reportan baches, fallas de luminarias, pérdidas de agua, acumulación de residuos o infracciones de tránsito mediante foto, ubicación georreferenciada y descripción en lenguaje natural. La IA multimodal deduce la categoría, sugiere la prioridad y organiza la cola de trabajo municipal.
+2. **Bolívar Animal & REMUM (Registro Municipal de Mascotas):**
+   * **Matching Bi-Modal Inteligente:** Cruce automático entre avisos de mascotas perdidas (`lost`) y encontradas (`found`) combinando embeddings visuales (ViT), similitud semántica (raza, pelaje, especie) y proximidad geográfica.
+   * **REMUM:** Empadronamiento digital de mascotas y animales comunitarios con generación de credenciales y **códigos QR físicos** para chapitas identificatorias.
+   * **Alertas Críticas SOS:** Detección y notificación en mapa de focos de cebos sospechosos o veneno en la vía pública (`alerta_cebo`).
 
 ---
 
-## Arquitectura de la IA
+## 🧠 Arquitectura de la Inteligencia Artificial
+
+A diferencia de formularios convencionales donde el ciudadano debe clasificar manualmente su solicitud, la plataforma cuenta con un modelo profundo unificado propio (**`BolivarMultimodalModel`**, ~218,6 Millones de parámetros) que procesa la imagen y el texto de manera conjunta:
 
 ```text
-IMAGEN + TEXTO
-      │
-      ├── ViT-Base/16  → Visual Tokens (197 × 768)
-      │                          │
-      │                    Cross-Attention
-      │                    Q=Text, K=V=Visual
-      └── RoBERTa-BNE  → Text Tokens (L × 768)
-                                 │
-                           Mean Pooling
-                                 │
-                           MLP Head (768→512→256→23*)
-                                 │
-                           23 etiquetas hoja*
+       IMAGEN (Foto del vecino)                        TEXTO (Descripción en español)
+                  │                                                  │
+                  ▼                                                  ▼
+      Vision Transformer (ViT-Base)                    RoBERTa en Español (bertin-roberta)
+    google/vit-base-patch16-224                        bertin-project/bertin-roberta-base
+                  │                                                  │
+     Visual Tokens: [197 × 768]                          Text Tokens: [L × 768]
+                  │                                                  │
+                  └─────────────────────────┬────────────────────────┘
+                                            │
+                                            ▼
+                                  Cross-Attention Fusion
+                                  (Query = Texto, Key/Value = Imagen)
+                                            │
+                                            ▼
+                                       Mean Pooling
+                                            │
+                                            ▼
+                             MLP Classifier Head (768→512→256→N)
+                                            │
+                    ┌───────────────────────┴───────────────────────┐
+                    ▼                                               ▼
+         Categoría & Prioridad                           Vector Embedding L2 (768d)
+        (Top-3 scores de certeza)                    (Matching de mascotas & centroides)
 ```
 
-### Experimentos comparativos (objetivo académico)
+### Componentes de Deep Learning
+* **Rama Visual:** `google/vit-base-patch16-224` (12 bloques Transformer, 86,4M params).
+* **Rama Textual:** `bertin-project/bertin-roberta-base-spanish` (12 bloques Transformer, 124,6M params).
+* **Fusión:** `CrossAttentionFusion` (8 cabezas de atención, proyección FFN a 3.072 neuronas, 7,1M params).
+* **Auto-Crop Multi-Escala:** Inferencia de mascotas con recorte focalizado automático para aislar al animal del fondo.
+* **Score Híbrido de Coincidencia:**
+  $$\text{Score} = w_{\text{vis}} \cdot \text{Sim}_{\text{Coseno}} + w_{\text{sem}} \cdot \text{Sim}_{\text{Semántica}} + w_{\text{geo}} \cdot \text{Factor}_{\text{Distancia}}$$
+* **Aprendizaje Continuo (Active Learning Replay):** Pipeline (`train_incremental.py`) que aprovecha las correcciones del equipo municipal para reentrenar sin sufrir *olvido catastrófico*.
 
-| Modelo | Test Macro F1 |
+---
+
+## 🛠️ Stack Tecnológico
+
+| Capa | Tecnologías |
 |---|---|
-| A — Solo ViT | 0.5448 ✅ |
-| B — Solo RoBERTa | En curso... |
-| C — Multimodal (ViT + RoBERTa + Cross-Att.) | Pendiente |
-
-**Hipótesis:** El modelo Multimodal (C) debe superar a los unimodales (A y B).
-
----
-
-## Categorías (23)
-
-| Área | Categorías |
-|---|---|
-| Infraestructura | bache, calle_deteriorada, luminaria_danada, arbol_caido, perdida_agua |
-| Higiene Urbana | basura, microbasural |
-| Animales | animal_perdido, animal_encontrado, animal_suelto, animal_en_riesgo, posible_animal_herido, abandono |
-| Tránsito y Estacionamiento | senalizacion_danada, cordon_amarillo, en_medio_de_calle, obstruccion_de_entrada, sobre_vereda, lugar_reservado, lugar_prohibido, vehiculo_abandonado, obstruccion_de_circulacion, semaforo_danado |
-
-\* La taxonomía y la interfaz ya admiten 23 etiquetas. El checkpoint distribuido aún fue entrenado con 14, por lo que las nueve clases nuevas requieren dataset y reentrenamiento antes de ser inferidas automáticamente.
+| **Frontend** | **Next.js 15** (App Router, React 19, TypeScript), Sistema de Diseño "Rastro" (CSS Design Tokens, Dark/Light mode), Leaflet & OpenStreetMap, Lucide Icons. |
+| **Backend** | **Python (FastAPI)**, Pydantic v2, SQLAlchemy (Async/Sync pooling), Uvicorn, Pillow. |
+| **Base de Datos** | **PostgreSQL** (Docker) con fallback SQLite para entornos ligeros. Migración y sincronización automática de esquema con `sync_db.py`. |
+| **Deep Learning** | **PyTorch**, Hugging Face Transformers, Torchvision. Aceleración nativa en Apple Silicon (MPS), CUDA o CPU. |
+| **Seguridad & Auth** | JWT (OAuth2 Password Bearer), Hash de contraseñas Bcrypt/Passlib, roles `citizen` y `admin`. |
 
 ---
 
-## Estructura del proyecto
+## 📂 Estructura del Repositorio
 
 ```
-bolivar-responde/
-├── frontend/          ← Next.js (TypeScript + Tailwind)
-├── backend/           ← FastAPI (Python)
-├── ml/
-│   ├── datasets/      ← build_dataset.py + multimodal_dataset.py
-│   ├── models/        ← vit_encoder.py, roberta_encoder.py, cross_attention.py, multimodal.py
-│   ├── training/      ← train_vit.py, train_roberta.py, train_multimodal.py
-│   ├── evaluation/    ← compare_results.py
-│   ├── inference/     ← predict.py
-│   └── checkpoints/   ← Pesos de los 3 modelos
-├── PLAN_IMPLEMENTACION.md
-├── enfoque del proyecto.md
-└── nuevo plan de implementacion.md
+proyecto-redes-neuronales/
+├── backend/                  ← API REST FastAPI
+│   ├── app/
+│   │   ├── ai_service.py     ← Carga del modelo PyTorch, auto-crop y embeddings
+│   │   ├── auth.py           ← Gestión de tokens JWT y hashing
+│   │   ├── crud.py           ← Lógica de base de datos y algoritmos de matching
+│   │   ├── database.py       ← Conexión PostgreSQL / SQLite
+│   │   ├── main.py           ← Endpoints públicos, auth, reportes, REMUM y SOS
+│   │   ├── models.py         ← Modelos SQLAlchemy (Report, Category, Remum, Feedback)
+│   │   └── schemas.py        ← Esquemas Pydantic v2
+│   ├── scripts/
+│   │   └── sync_db.py        ← Migración y sincronización de columnas de base de datos
+│   └── tests/                ← Suite de tests automatizados (Pytest)
+├── frontend/                 ← Aplicación Web Next.js 15
+│   ├── app/
+│   │   ├── page.tsx          ← Feed ciudadano, mapa rápido y buscador interactivo
+│   │   ├── reportes/         ← Listado con filtros avanzados y galería
+│   │   ├── mapa/             ← Mapa georreferenciado en pantalla completa
+│   │   ├── remum/            ← Registro Municipal de Mascotas y carnet digital
+│   │   ├── qr/               ← Escáner y generador de chapitas identificatorias QR
+│   │   ├── sos/              ← Módulo de Alerta Cebo y emergencias veterinarias
+│   │   └── dashboard/        ← Panel administrativo municipal (triage, feedback y métricas)
+│   └── components/           ← Componentes modulares accesibles y responsivos
+├── ml/                       ← Núcleo de Machine Learning
+│   ├── checkpoints/          ← Pesos entrenados (.pt) multimodal y baselines
+│   ├── datasets/             ← dataset.json (547 muestras) y cargadores PyTorch
+│   ├── models/               ← vit_encoder.py, roberta_encoder.py, multimodal.py
+│   └── training/             ← train_multimodal.py, train_incremental.py, train_vit.py
+├── local_images/             ← Dataset de imágenes locales organizadas por splits y clases
+├── dev.sh                    ← Script automatizado de inicio para desarrollo
+└── docker-compose.yml        ← Contenedor de base de datos PostgreSQL
 ```
 
 ---
 
-## Instalación y ejecución local
+## 🚀 Inicio Rápido en Desarrollo
 
-### Requisitos
-- Python 3.11+
-- Node.js 20+
-- PostgreSQL
+El proyecto incluye el script maestro [`./dev.sh`](dev.sh), que levanta la base de datos PostgreSQL en Docker, sincroniza tablas/esquemas, arranca la API FastAPI y sirve el frontend Next.js en paralelo:
 
+### 1. Requisitos Previos
+* **Python 3.11+** (con entorno virtual configurado en `./venv`)
+* **Node.js 20+** y `npm`
+* **Docker** (opcional pero recomendado para PostgreSQL local)
 
-### Backend
+### 2. Configuración Inicial
 ```bash
+# 1. Clonar el repositorio y entrar al directorio
+git clone https://github.com/ValentinFranco08/BolivarReporte.git
+cd BolivarReporte
+
+# 2. Configurar entorno virtual de Python
 python3 -m venv venv
 source venv/bin/activate
 pip install -r backend/requirements.txt
-cd backend && uvicorn app.main:app --reload --port 8000
+
+# 3. Instalar dependencias del frontend
+cd frontend && npm install && cd ..
 ```
 
-### Frontend
+### 3. Levantar Todo con un Solo Comando
 ```bash
-cd frontend
-npm install
-npm run dev
+chmod +x dev.sh
+./dev.sh
 ```
 
-### Entrenamiento ML
+El script iniciará automáticamente:
+* 🐘 **PostgreSQL (Docker):** Puerto `5433`
+* ⚡ **Backend API (FastAPI):** [http://localhost:8001](http://localhost:8001) *(Documentación interactiva en `/docs`)*
+* 🌐 **Frontend (Next.js):** [http://localhost:3000](http://localhost:3000)
+
+*(Para apagar todos los procesos de forma limpia, simplemente presione `Ctrl + C` en la terminal).*
+
+---
+
+## 👥 Usuarios de Prueba por Defecto
+
+Al inicializar la base de datos, el backend genera automáticamente las credenciales iniciales de prueba:
+
+| Rol | Email | Contraseña | Permisos |
+|---|---|---|---|
+| **Administrador Municipal** | `admin@bolivar.gob.ar` | `admin123` | Acceso a `/dashboard`, triage de reportes, cambio de estados, validación y fusión de categorías. |
+| **Vecino Ciudadano** | `vecino@bolivar.gob.ar` | `vecino123` | Creación de reportes, registro de mascotas en REMUM, alertas y seguimiento personal. |
+
+---
+
+## 🏷️ Taxonomía de Problemáticas (23 Categorías)
+
+El sistema soporta 23 etiquetas en 4 grandes áreas urbanas:
+
+1. **Infraestructura:** `bache`, `calle_deteriorada`, `luminaria_danada`, `arbol_caido`, `perdida_agua`.
+2. **Higiene Urbana:** `basura`, `microbasural`.
+3. **Animales & Zoonosis:** `animal_perdido`, `animal_encontrado`, `animal_suelto`, `animal_en_riesgo`, `posible_animal_herido`, `abandono`.
+4. **Tránsito y Estacionamiento:** `senalizacion_danada`, `cordon_amarillo`, `en_medio_de_calle`, `obstruccion_de_entrada`, `sobre_vereda`, `lugar_reservado`, `lugar_prohibido`, `vehiculo_abandonado`, `obstruccion_de_circulacion`, `semaforo_danado`.
+
+---
+
+## 🧪 Pruebas Automatizadas
+
+Para ejecutar la suite de pruebas del backend y verificar la integridad de la base de datos, similitud vectorial y rutas:
+
 ```bash
-# Generar dataset multimodal
-python3 ml/datasets/build_dataset.py
-
-# Entrenar los 3 modelos para comparación
-python3 ml/training/train_vit.py
-python3 ml/training/train_roberta.py
-python3 ml/training/train_multimodal.py
+source venv/bin/activate
+pytest backend/tests/ -v
 ```
 
 ---
 
-## Estado del proyecto
+## 📄 Licencia y Ámbito del Proyecto
 
-- [x] Arquitectura multimodal implementada en PyTorch
-- [x] Taxonomía, API y UI preparadas para 23 etiquetas, incluido Tránsito y Estacionamiento
-- [x] Dataset y checkpoint actuales de 14 etiquetas (referencia histórica)
-- [x] Baseline A (ViT): test Macro F1 = 0.5448
-- [ ] Baseline B (RoBERTa): en entrenamiento
-- [ ] Modelo C (Multimodal): pendiente
-- [ ] PostgreSQL + endpoints CRUD
-- [ ] Autenticación JWT
-- [ ] Mapa (Leaflet)
-- [ ] Dashboard administrativo
-
----
-
-## Documentación
-
-- [`PLAN_IMPLEMENTACION.md`](PLAN_IMPLEMENTACION.md) — Plan técnico detallado
-- [`PLAN_IMPLEMENTACION_TRANSITO.md`](PLAN_IMPLEMENTACION_TRANSITO.md) — Plan específico, estado y criterios de cierre del módulo
-- [`PLAN_REDISENO_RASTRO.md`](PLAN_REDISENO_RASTRO.md) — Plan integral del rediseño de Bolívar Animal: experiencia pública, mapa, alertas, accesibilidad y mesa operativa.
-- [`enfoque del proyecto.md`](enfoque%20del%20proyecto.md) — Visión y diferencial del producto
-- [`nuevo plan de implementacion.md`](nuevo%20plan%20de%20implementacion.md) — Especificaciones técnicas de la arquitectura IA
-
-## Diseño de interfaz
-
-El rediseño visual de la plataforma sigue la dirección **Rastro** definida en
-[`PLAN_REDISENO_RASTRO.md`](PLAN_REDISENO_RASTRO.md). La interfaz prioriza la
-foto, la situación, la última ubicación y el contacto para facilitar la
-búsqueda y recuperación comunitaria de mascotas en Bolívar.
-
-La implementación y validación del frontend utiliza la skill avanzada
-**Impeccable**: dirección de diseño, componentes responsive, accesibilidad,
-inspección en escritorio y móvil, y detección de patrones visuales genéricos.
-
----
-
-*Proyecto académico de Deep Learning Multimodal 
+Desarrollado como proyecto avanzado de Inteligencia Artificial Aplicada y Deep Learning Multimodal enfocado en la modernización de servicios ciudadanos y protección animal para Bolívar, Provincia de Buenos Aires, Argentina.
