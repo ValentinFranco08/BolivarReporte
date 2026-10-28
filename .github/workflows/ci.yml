@@ -32,7 +32,7 @@ jobs:
     - name: Run Backend Tests
       working-directory: ./backend
       env:
-        PYTHONPATH: .
+        PYTHONPATH: .:..
       run: pytest -v
 
   frontend-tests:
@@ -84,9 +84,13 @@ jobs:
         python -m pip install --upgrade pip
         # Instalar versión CPU de PyTorch para CI (más rápida y liviana)
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-        pip install transformers Pillow pytest
+        pip install transformers Pillow pytest scikit-learn httpx
         
     - name: Run ML Sanity Check
       working-directory: ./ml
+      env:
+        PYTHONPATH: ".."
+        HF_HUB_OFFLINE: "1"
+        TRANSFORMERS_OFFLINE: "1"
       run: |
-        pytest test_forward.py -v
+        pytest test_forward.py tests -v

@@ -11,6 +11,14 @@
 
 ---
 
+## Arquitectura MVC y programación orientada a objetos
+
+El backend separa controladores FastAPI, servicios de negocio, repositorios SQLAlchemy e infraestructura. La vista es Next.js. ML cuenta con un `Trainer` común para ViT, RoBERTa y multimodal, adaptadores polimórficos, preprocesamiento compartido y checkpoints con metadatos.
+
+La [guía de arquitectura](docs/ARQUITECTURA.md) explica las clases, principios de POO, diagramas UML, transacciones, comandos de mantenimiento y verificación. `main.py` solo ensambla la aplicación; las migraciones, semillas y reindexación son comandos explícitos.
+
+---
+
 ## 🐾 ¿Qué es Bolívar Animal?
 
 Hoy en día, cuando una mascota se pierde o se rescata a un animal en la vía pública, la búsqueda se dispersa en publicaciones de Facebook, estados de WhatsApp y grupos vecinales: los avisos se pierden rápidamente, no hay cruce de datos geográfico ni trazabilidad oficial.
@@ -68,7 +76,7 @@ Para que un vecino de a pie no tenga que completar formularios técnicos complej
 * **Auto-Crop Multi-Escala:** Detección y recorte focalizado automático del animal para extraer embeddings limpios sin interferencia del fondo de la calle o patio.
 * **Score Híbrido de Coincidencia (Perdido vs Hallado):**
   $$\text{Score Final} = w_{\text{vis}} \cdot \text{Sim}_{\text{Coseno}} + w_{\text{sem}} \cdot \text{Sim}_{\text{Semántica}} + w_{\text{geo}} \cdot \text{Factor}_{\text{Proximidad}}$$
-* **Aprendizaje Continuo (Active Learning Replay):** Script (`train_incremental.py`) con *Experience Replay* que aprovecha las validaciones de Zoonosis para reajustar los pesos sin sufrir olvido catastrófico.
+* **Aprendizaje Continuo (Active Learning Replay):** Script (`train_incremental.py`) con *Experience Replay* que aprovecha las validaciones de Zoonosis para reajustar los pesos para reducir el riesgo de olvido catastrófico.
 
 ### Resultados en el Conjunto de Prueba (*Test Set*):
 * **Accuracy:** **96.67%** (58 aciertos sobre 60 casos de prueba independientes).
@@ -97,7 +105,7 @@ El modelo clasifica automáticamente los casos en las situaciones prioritarias p
 |---|---|
 | **Frontend** | **Next.js 15** (App Router, React 19, TypeScript), Sistema de Diseño "Rastro" (CSS Design Tokens con modo claro/oscuro), Leaflet & OpenStreetMap, Lucide Icons. |
 | **Backend** | **Python (FastAPI)**, Pydantic v2, SQLAlchemy (Async/Sync pooling), Uvicorn, Pillow. |
-| **Base de Datos** | **PostgreSQL** (Docker) con fallback SQLite para entornos livianos. Sincronización automática de esquema con `sync_db.py`. |
+| **Base de Datos** | **PostgreSQL** (Docker) con fallback SQLite para entornos livianos. Migraciones explícitas con Alembic. |
 | **Deep Learning** | **PyTorch**, Hugging Face Transformers, Torchvision. Aceleración nativa en Apple Silicon (MPS), CUDA o CPU. |
 | **Seguridad & Auth** | JWT (OAuth2 Password Bearer), Hashing de contraseñas Bcrypt/Passlib, roles `citizen` y `admin`. |
 
@@ -105,45 +113,37 @@ El modelo clasifica automáticamente los casos en las situaciones prioritarias p
 
 ## 📂 Estructura del Repositorio
 
-```
-proyecto-redes-neuronales/
-├── backend/                  ← API REST FastAPI
-│   ├── app/
-│   │   ├── ai_service.py     ← Inferencia PyTorch, Auto-Crop y extracción de embeddings
-│   │   ├── auth.py           ← Autenticación JWT y roles de usuario
-│   │   ├── crud.py           ← Lógica de base de datos y algoritmo de matching híbrido
-│   │   ├── database.py       ← Conexión PostgreSQL / SQLite
-│   │   ├── main.py           ← Endpoints públicos, auth, reportes, REMUM y SOS
-│   │   ├── models.py         ← Modelos SQLAlchemy (Report, Category, Remum, Feedback)
-│   │   └── schemas.py        ← Esquemas de validación Pydantic v2
-│   ├── scripts/
-│   │   └── sync_db.py        ← Sincronización y migración automática de base de datos
-│   └── tests/                ← Suite de tests automatizados (Pytest)
-├── frontend/                 ← Aplicación Web Next.js 15
-│   ├── app/
-│   │   ├── page.tsx          ← Feed principal, mapa interactivo y buscador de mascotas
-│   │   ├── reportes/         ← Galería con filtros avanzados (perdidos, hallados, urgencias)
-│   │   ├── mapa/             ← Mapa georreferenciado de Bolívar con focos y avistajes
-│   │   ├── remum/            ← Registro Municipal de Mascotas y carnet digital
-│   │   ├── qr/               ← Generador y lector de chapitas identificatorias con QR
-│   │   ├── sos/              ← Módulo de Alerta Cebo y emergencias veterinarias
-│   │   └── dashboard/        ← Panel operativo de Zoonosis (triage, feedback y métricas)
-│   └── components/           ← Componentes modulares accesibles y responsivos
-├── ml/                       ← Núcleo de Machine Learning
-│   ├── checkpoints/          ← Pesos entrenados (.pt) multimodal (218M params)
-│   ├── datasets/             ← dataset.json (547 muestras balanceadas) y cargadores
-│   ├── models/               ← vit_encoder.py, roberta_encoder.py, multimodal.py
-│   └── training/             ← train_multimodal.py, train_incremental.py, train_vit.py
-├── local_images/             ← Dataset de imágenes locales organizadas por splits
-├── dev.sh                    ← Script maestro de inicio para desarrollo
-└── docker-compose.yml        ← Contenedor de base de datos PostgreSQL
+```text
+backend/app/
+├── main.py                  # Composición y ciclo de vida HTTP
+├── controllers/             # Rutas y contratos HTTP
+├── services/                # Casos de uso y políticas de negocio
+├── repositories/            # Persistencia SQLAlchemy
+├── infrastructure/          # Archivos, unidad de trabajo y carga diferida
+├── core/                    # Configuración y errores
+├── dependencies.py          # Inyección de dependencias
+├── models.py                # Entidades ORM
+└── schemas.py               # Contratos Pydantic
+ml/
+├── models/                  # Encoders, fusión, multimodal y baselines
+├── data/                    # Dataset, validación y preparación
+├── preprocessing/           # Imagen y texto
+├── training/                # Trainer, fases y experimentos
+├── evaluation/              # Evaluator y métricas
+├── inference/               # Predictor y checkpoints
+├── configs/                 # Configuración de experimentos
+└── cli.py                   # Entrada común de ML
+frontend/                    # Vistas Next.js
+backend/scripts/             # Migraciones, seed, exportación y reentrenamiento
+backend/tests/               # Pruebas de API, servicios y migraciones
+ml/tests/                    # Pruebas del pipeline neuronal
 ```
 
 ---
 
 ## 🚀 Inicio Rápido en Desarrollo
 
-El proyecto incluye el script maestro [`./dev.sh`](dev.sh), que levanta la base de datos PostgreSQL en Docker, sincroniza tablas/esquemas, arranca la API FastAPI y sirve el frontend Next.js en paralelo:
+El proyecto incluye el script maestro [`./dev.sh`](dev.sh), que levanta la base de datos PostgreSQL en Docker, ejecuta migraciones y datos iniciales demo, arranca la API FastAPI y sirve el frontend Next.js en paralelo:
 
 ### 1. Requisitos Previos
 * **Python 3.11+** (con entorno virtual en `./venv`)
@@ -159,7 +159,7 @@ cd BolivarReporte
 # 2. Configurar entorno virtual de Python
 python3 -m venv venv
 source venv/bin/activate
-pip install -r backend/requirements.txt
+pip install -r backend/requirements.txt -r ml/requirements.txt
 
 # 3. Instalar dependencias del frontend
 cd frontend && npm install && cd ..
@@ -197,7 +197,7 @@ Para validar la suite completa de tests (matching vectorial, lógica de negocio 
 
 ```bash
 source venv/bin/activate
-pytest backend/tests/ -v
+make test-python
 ```
 
 ---

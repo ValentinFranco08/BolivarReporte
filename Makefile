@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend test
+.PHONY: dev backend frontend test test-python migrate seed
 
 dev:
 	./dev.sh
@@ -10,5 +10,14 @@ frontend:
 	cd frontend && npm run dev
 
 test:
-	cd backend && PYTHONPATH=. ../venv/bin/pytest -v
+	$(MAKE) test-python
 	cd frontend && npm test -- --run
+
+test-python:
+	PYTHONPATH=backend:. HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 venv/bin/python -m pytest backend/tests ml/test_forward.py ml/tests -q
+
+migrate:
+	venv/bin/python backend/scripts/manage.py migrate
+
+seed:
+	venv/bin/python backend/scripts/manage.py seed

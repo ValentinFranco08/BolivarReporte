@@ -12,3 +12,6 @@ python-multipart
 # Testing
 pytest==8.0.2
 httpx==0.27.0
+
+# Matching vectorial; entrenamiento e inferencia: ml/requirements.txt
+numpy

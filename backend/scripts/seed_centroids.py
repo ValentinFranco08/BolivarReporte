@@ -49,6 +49,7 @@ def seed_categories_and_centroids():
 
     try:
         from app.ai_service import ai_service
+        ai_service.initialize()
         use_real_model = ai_service.ready
     except Exception:
         use_real_model = False

@@ -1,53 +1,24 @@
-import os
-import sys
-import json
+"""Exportar feedback al contrato de datos de ML sin acoplar ML a SQLAlchemy."""
 import argparse
-from datetime import datetime
+import json
+import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from app.database import SessionLocal
-from app.crud import get_all_feedback
+ROOT = Path(__file__).resolve().parents[2]
+sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
 
 def export_retraining_dataset(output_file: str):
-    db = SessionLocal()
-    try:
-        feedbacks = get_all_feedback(db)
-        dataset = []
-        
-        for fb in feedbacks:
-            # Solo exportamos correcciones (IA falló) para reentrenar
-            if not fb.correct and fb.correct_class and fb.prediction and fb.prediction.report:
-                report = fb.prediction.report
-                
-                dataset.append({
-                    "id": report.id,
-                    "image_file": os.path.basename(report.image_path),
-                    "text_description": report.description or "",
-                    "predicted_label": fb.prediction.predicted_class,
-                    "ground_truth_label": fb.correct_class,
-                    "confidence_at_prediction": fb.prediction.confidence,
-                    "reviewed_by_user_id": fb.reviewed_by
-                })
-        
-        if not dataset:
-            print("No hay datos de feedback negativo para exportar.")
-            return
-
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(dataset, f, indent=4, ensure_ascii=False)
-            
-        print(f"✅ Dataset exportado exitosamente a: {output_file}")
-        print(f"📊 Total de muestras etiquetadas para reentrenamiento: {len(dataset)}")
-
-    except Exception as e:
-        print(f"Error al exportar dataset: {e}")
-    finally:
-        db.close()
+    from app.database import SessionLocal
+    from app.dependencies import get_feedback_service
+    from app.core.config import settings
+    with SessionLocal() as session:
+        samples = get_feedback_service(session).training_samples(settings.uploads_dir)
+    Path(output_file).write_text(json.dumps(samples, indent=2, ensure_ascii=False))
+    print(f"Exportadas {len(samples)} correcciones a {output_file}")
+    return samples
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Exportar feedback del dashboard como dataset para reentrenamiento.")
-    parser.add_argument("--output", type=str, default="retraining_dataset.json", help="Ruta del archivo JSON de salida.")
+    parser = argparse.ArgumentParser(description="Exportar correcciones para ML (image, text, label, feedback_id)")
+    parser.add_argument("--output", default="retraining_dataset.json")
     args = parser.parse_args()
-    
     export_retraining_dataset(args.output)

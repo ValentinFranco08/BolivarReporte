@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from .models import ReportStatus, ReportPriority, UserRole, AnimalReportType, PetType, PetHealthStatus, RemumStatus, HealthEventType
@@ -16,8 +16,7 @@ class CategoryResponse(CategoryBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CategoryCreate(BaseModel):
     name: str
@@ -48,8 +47,7 @@ class UserResponse(UserBase):
     role: UserRole
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str
@@ -70,8 +68,7 @@ class AIPredictionResponse(AIPredictionBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Reportes ---
 class ReportBase(BaseModel):
@@ -117,8 +114,7 @@ class ReportResponse(ReportBase):
     prediction: Optional[AIPredictionResponse] = None
     # user: Optional[UserResponse] = None # Omitimos detalles del usuario por privacidad
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PetMatchCandidate(BaseModel):
     report: ReportResponse
@@ -149,8 +145,7 @@ class FeedbackResponse(BaseModel):
     reviewed_by: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- REMUM ---
 class HealthEventBase(BaseModel):
@@ -167,8 +162,7 @@ class HealthEventResponse(HealthEventBase):
     id: int
     remum_record_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class GodparentBase(BaseModel):
     name: str
@@ -181,8 +175,7 @@ class GodparentResponse(GodparentBase):
     id: int
     remum_record_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RemumBase(BaseModel):
     pet_name: str
@@ -209,5 +202,4 @@ class RemumResponse(RemumBase):
     health_events: List[HealthEventResponse] = []
     godparents: List[GodparentResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

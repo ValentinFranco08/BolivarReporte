@@ -5,51 +5,43 @@ Este documento describe el rol, arquitectura, convenciones y comandos esenciales
 ---
 
 ## 🎯 Misión del Proyecto
-**Bolívar Responde** es una plataforma ciudadana integral para San Carlos de Bolívar que utiliza Inteligencia Artificial Multimodal (Vision Transformer + RoBERTa en Español con Cross-Attention) para clasificar y priorizar reportes urbanos, de bienestar animal y de tránsito/estacionamiento en una taxonomía objetivo de 23 etiquetas hoja.
+**Bolívar Responde** es una plataforma ciudadana integral para San Carlos de Bolívar que utiliza Inteligencia Artificial Multimodal (Vision Transformer + RoBERTa en Español con Cross-Attention) para clasificar y priorizar reportes urbanos, de bienestar animal y de tránsito/estacionamiento con una taxonomía activa de 6 clases animales. Los planes históricos de 23 etiquetas no describen el modelo actual.
 
 ---
 
 ## 📂 Mapa de la Arquitectura
 
+Consultar `docs/ARQUITECTURA.md` para diagramas UML y comandos.
+
 ```text
-proyecto redes neuronales/
-├── ml/                       # Módulo de Machine Learning (PyTorch)
-│   ├── datasets/             # Pipelines de datos (build_dataset.py, multimodal_dataset.py)
-│   ├── models/               # Encoders (ViT, RoBERTa), CrossAttentionFusion y MultimodalClassifier
-│   ├── training/             # Scripts de entrenamiento (train_vit.py, train_roberta.py, train_multimodal.py)
-│   ├── evaluation/           # Evaluación y matriz de confusión (compare_results.py)
-│   ├── inference/            # Módulo de inferencia en producción (predict.py)
-│   └── checkpoints/          # Pesos entrenados (multimodal/best_fase3.pt)
-│
-├── backend/                  # API REST (FastAPI)
-│   ├── app/
-│   │   ├── main.py           # Endpoints de API, CORS y montaje estático de /uploads
-│   │   ├── database.py       # Engine SQLAlchemy y sesión DB
-│   │   ├── models.py         # 6 Modelos ORM (User, Category, Report, AIPrediction, ModelVersion, Feedback)
-│   │   ├── schemas.py        # Esquemas Pydantic v2 de entrada y salida
-│   │   ├── crud.py           # Consultas y mutaciones a la base de datos
-│   │   ├── auth.py           # Autenticación JWT y hashing de contraseñas
-│   │   └── ai_service.py     # Wrapper singleton para inferencia con el modelo PyTorch
-│   ├── scripts/              # Utilidades (seed.py, update_coords.py, export_dataset.py)
-│   ├── alembic/              # Control de versiones de la base de datos
-│   └── requirements.txt      # Dependencias backend
-│
-├── frontend/                 # Aplicación Web (Next.js 16 App Router)
-│   ├── app/
-│   │   ├── page.tsx          # Landing page principal
-│   │   ├── login/ & registro/ # Autenticación ciudadana / administrativa
-│   │   ├── reportes/nuevo/   # Formulario con GPS, análisis multimodal y corrección
-│   │   ├── reportes/         # Listado público de incidencias
-│   │   ├── mapa/             # Mapa interactivo (Leaflet & OpenStreetMap)
-│   │   └── dashboard/        # Panel de administración, filtros y panel de Feedback IA
-│   └── components/ui/        # Componentes UI (AIResultCard, ImageUploader, Map, etc.)
-│
-├── docker-compose.yml        # PostgreSQL en puerto 5433
-├── AGENT.md                  # Este archivo (Instrucciones para Agentes)
-├── memoria.md                # Estado actual, métricas y decisiones técnicas
-├── README.md                 # Documentación general del proyecto
-└── PLAN_IMPLEMENTACION_TRANSITO.md # Estado y plan de cierre de Tránsito y Estacionamiento
+backend/app/
+├── main.py             # Configuración HTTP y ciclo de vida
+├── controllers/        # APIRouter: transporte HTTP
+├── services/           # Casos de uso y políticas de negocio
+├── repositories/       # Consultas e inserciones; flush, sin commit
+├── infrastructure/     # FileStorage, LazyPredictor y UnitOfWork
+├── core/               # Configuración y errores
+├── dependencies.py     # Composición de objetos
+├── models.py           # Entidades SQLAlchemy
+├── schemas.py          # Contratos Pydantic
+├── crud.py             # Fachada compatible para scripts anteriores
+└── ai_service.py       # Fachada compatible; inferencia real en ml/
+ml/
+├── models/             # Encoders, fusión, clasificador y baselines
+├── data/               # Dataset, validación y preparación
+├── preprocessing/      # Imagen y texto compartidos
+├── training/           # Trainer, fases, experimentos e incremental
+├── evaluation/         # Evaluator y métricas
+├── inference/          # Predictor, checkpoints y sugerencias
+├── configs/            # Experimentos JSON
+└── cli.py              # Comandos de ML
+frontend/               # Vista Next.js
+backend/scripts/        # Mantenimiento explícito y puente de feedback
 ```
+
+Los servicios coordinan transacciones con `UnitOfWork`. Los controladores no consultan la base ni ejecutan lógica neuronal. ML no debe importar FastAPI, SQLAlchemy ni módulos del backend. El polimorfismo de `BatchAdapter` permite compartir `Trainer` entre los tres modelos.
+
+Las migraciones y datos iniciales se ejecutan con `backend/scripts/manage.py migrate` y `seed`. No reintroducir creación de tablas, usuarios o reindexación en el startup HTTP. `dev.sh` ya ejecuta mantenimiento explícito y no sincroniza/trunca bases.
 
 ---
 
@@ -72,7 +64,7 @@ proyecto redes neuronales/
 5. **Esquemas y Tipos Pydantic:**  
    - Todos los esquemas de API deben residir en `backend/app/schemas.py`.
 6. **Taxonomía y legalidad:**
-   - `ml/taxonomy.py` es la fuente de verdad de las 23 etiquetas, áreas, jerarquía y prioridad.
+   - `ml/taxonomy.py` es la fuente de verdad de las 6 etiquetas activas, áreas y prioridad.
    - La IA clasifica situaciones; nunca declara una infracción legal. La aplicación debe conservar el disclaimer y enviar casos de confianza menor a `0.55` a revisión humana.
 
 ---
@@ -113,5 +105,5 @@ python backend/scripts/export_dataset.py --output dataset_correcciones.json
 ## 🚦 Módulo Tránsito y Estacionamiento
 
 - La interfaz permite corregir manualmente las nueve etiquetas nuevas y muestra `classification` de la API (jerarquía, prioridad y revisión requerida).
-- El checkpoint disponible sigue siendo de 14 clases. No afirmar soporte de inferencia para tránsito hasta reunir ~100 imágenes por hoja, regenerar `dataset.json` y reentrenar el head de 23 clases.
+- La taxonomía activa contiene 6 clases animales. No afirmar soporte de inferencia para tránsito: requiere actualizar explícitamente taxonomía, dataset, cabeza y metadatos del checkpoint.
 - Consultar `PLAN_IMPLEMENTACION_TRANSITO.md` antes de modificar dataset, entrenamiento o UI del módulo.

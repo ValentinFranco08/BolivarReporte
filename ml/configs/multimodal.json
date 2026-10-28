@@ -1,0 +1,19 @@
+{
+  "dataset_path": "ml/datasets/dataset.json",
+  "checkpoint_dir": "ml/checkpoints/multimodal",
+  "tokenizer_name": "bertin-project/bertin-roberta-base-spanish",
+  "batch_size": 8,
+  "max_token_length": 128,
+  "num_workers": 0,
+  "lr_head": 0.0001,
+  "epochs_phase1": 10,
+  "lr_vit": 1.5e-05,
+  "unfreeze_vit_layers": 3,
+  "epochs_phase2": 10,
+  "lr_roberta": 1.5e-05,
+  "unfreeze_roberta_layers": 3,
+  "epochs_phase3": 10,
+  "weight_decay": 0.01,
+  "early_stop_patience": 5,
+  "grad_clip": 1.0
+}

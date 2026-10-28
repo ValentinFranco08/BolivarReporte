@@ -1,55 +1,32 @@
+"""Contrato numérico del modelo real con encoders pequeños inyectados, sin red."""
 import torch
-import sys
-import os
-
-# Asegurar que Python encuentra el paquete ml
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from torch import nn
 from ml.models.multimodal import BolivarMultimodalModel
-from transformers import RobertaTokenizer
+from ml.taxonomy import NUM_CLASSES
+
+class TinyVision(nn.Module):
+    def forward(self, pixel_values):
+        return pixel_values.flatten(2).transpose(1, 2)
+
+class TinyText(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.embedding = nn.Embedding(20, 8)
+
+    def forward(self, input_ids, attention_mask):
+        return self.embedding(input_ids)
 
 def test_forward_pass():
-    print("Iniciando prueba de Forward Pass de la Arquitectura Multimodal...")
-    
-    # 1. Inicializar modelo
-    print("Cargando modelo (esto puede tardar unos segundos si descarga los pesos)...")
-    try:
-        model = BolivarMultimodalModel(num_classes=14, embed_dim=768, freeze_encoders=True)
-    except Exception as e:
-        print(f"Error cargando modelo: {e}")
-        return
-        
-    print("Modelo cargado exitosamente.")
-    
-    # 2. Preparar tensores falsos
-    batch_size = 2
-    
-    # Imagen de prueba (B, C, H, W)
-    pixel_values = torch.randn(batch_size, 3, 224, 224)
-    print(f"Tensor de imagen: {pixel_values.shape}")
-    
-    # Texto de prueba
-    tokenizer = RobertaTokenizer.from_pretrained("bertin-project/bertin-roberta-base-spanish")
-    texts = ["Encontré un bache gigante en la calle San Martín.", "Hay un perro abandonado en la plaza."]
-    
-    inputs = tokenizer(texts, padding=True, truncation=True, max_length=128, return_tensors="pt")
-    input_ids = inputs["input_ids"]
-    attention_mask = inputs["attention_mask"]
-    print(f"Tensor de texto (input_ids): {input_ids.shape}")
-    
-    # 3. Forward pass
-    print("Ejecutando Forward Pass...")
-    model.eval() # Modo evaluación
+    model = BolivarMultimodalModel(num_classes=NUM_CLASSES, embed_dim=8,
+        visual_encoder=TinyVision(), text_encoder=TinyText())
+    model.eval()
     with torch.no_grad():
-        logits = model(pixel_values, input_ids, attention_mask)
-        
-    print(f"Salida (logits): {logits.shape}")
-    
-    # Verificar dimensiones
-    assert logits.shape == (batch_size, 14), f"Dimensiones incorrectas. Se esperaba {(batch_size, 14)}, se obtuvo {logits.shape}"
-    
-    print("\n✅ ¡Prueba de Forward Pass superada exitosamente!")
-    print("La red neuronal multimodal (ViT + RoBERTa + Cross-Attention) está lista para entrenarse.")
+        logits, embeddings = model(torch.randn(2, 8, 2, 2),
+            torch.randint(0, 20, (2, 5)), torch.ones(2, 5), return_embeddings=True)
+    assert logits.shape == (2, NUM_CLASSES)
+    assert embeddings.shape == (2, 8)
+    assert torch.isfinite(logits).all()
+    assert torch.allclose(embeddings.norm(dim=-1), torch.ones(2), atol=1e-5)
 
 if __name__ == "__main__":
-    test()
+    test_forward_pass()

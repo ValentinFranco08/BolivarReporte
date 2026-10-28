@@ -9,18 +9,19 @@ class BolivarMultimodalModel(nn.Module):
     Modelo final que unifica ViT + RoBERTa + Cross-Attention + Classification Head.
     Clasifica problemáticas urbanas, animales y tránsito en N categorías.
     """
-    def __init__(self, num_classes=None, embed_dim=768, freeze_encoders=True):
+    def __init__(self, num_classes=None, embed_dim=768, freeze_encoders=True, *,
+                 visual_encoder=None, text_encoder=None, fusion=None):
         super(BolivarMultimodalModel, self).__init__()
         if num_classes is None:
             from ml.taxonomy import NUM_CLASSES as _N
             num_classes = _N
         
         # 1. Encoders
-        self.vit = ViTEncoder(freeze_layers=freeze_encoders)
-        self.roberta = RobertaEncoder(freeze_layers=freeze_encoders)
+        self.vit = visual_encoder if visual_encoder is not None else ViTEncoder(freeze_layers=freeze_encoders)
+        self.roberta = text_encoder if text_encoder is not None else RobertaEncoder(freeze_layers=freeze_encoders)
         
         # 2. Cross-Attention Fusion
-        self.fusion = CrossAttentionFusion(embed_dim=embed_dim, num_heads=8, dropout=0.1)
+        self.fusion = fusion if fusion is not None else CrossAttentionFusion(embed_dim=embed_dim, num_heads=8, dropout=0.1)
         
         # 3. Classification Head (MLP): 768 -> 512 -> 256 -> N clases
         self.classifier = nn.Sequential(

@@ -16,8 +16,10 @@ echo -e "${BLUE}==============================================${NC}"
 # Detectar entorno virtual de Python
 if [ -f "$ROOT_DIR/venv/bin/uvicorn" ]; then
     UVICORN_BIN="$ROOT_DIR/venv/bin/uvicorn"
+    PYTHON_BIN="$ROOT_DIR/venv/bin/python"
 elif command -v uvicorn &> /dev/null; then
     UVICORN_BIN="uvicorn"
+    PYTHON_BIN="$(command -v python3)"
 else
     echo -e "${YELLOW}⚠️  No se encontró uvicorn en ./venv ni en el PATH del sistema.${NC}"
     exit 1
@@ -27,10 +29,11 @@ fi
 if command -v docker &> /dev/null && docker info &> /dev/null; then
     echo -e "${GREEN}🐘 Verificando PostgreSQL (Docker compose)...${NC}"
     (cd "$ROOT_DIR" && docker compose up -d db 2>/dev/null || true)
-    if [ -f "$ROOT_DIR/backend/scripts/sync_db.py" ]; then
-        (cd "$ROOT_DIR" && "$ROOT_DIR/venv/bin/python" backend/scripts/sync_db.py 2>/dev/null || true)
-    fi
 fi
+
+# Migraciones y datos iniciales explícitos; sin copiar ni truncar otra base.
+"$PYTHON_BIN" "$ROOT_DIR/backend/scripts/manage.py" migrate --adopt-existing || exit 1
+"$PYTHON_BIN" "$ROOT_DIR/backend/scripts/manage.py" seed --demo-users || exit 1
 
 # Manejo de apagado limpio con Ctrl + C
 cleanup() {

@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('area', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('active', sa.Boolean(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_categories_id'), 'categories', ['id'], unique=False)
@@ -39,7 +39,7 @@ def upgrade() -> None:
     sa.Column('architecture', sa.String(), nullable=True),
     sa.Column('dataset_version', sa.String(), nullable=True),
     sa.Column('macro_f1', sa.Float(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_model_versions_id'), 'model_versions', ['id'], unique=False)
@@ -49,7 +49,7 @@ def upgrade() -> None:
     sa.Column('email', sa.String(), nullable=False),
     sa.Column('password_hash', sa.String(), nullable=False),
     sa.Column('role', sa.Enum('CITIZEN', 'ADMIN', name='userrole'), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -66,7 +66,7 @@ def upgrade() -> None:
     sa.Column('image_path', sa.String(), nullable=False),
     sa.Column('status', sa.Enum('REPORTADO', 'CLASIFICADO', 'PENDIENTE', 'EN_PROCESO', 'RESUELTO', 'RECHAZADO', 'DUPLICADO', 'REQUIERE_INFORMACION', name='reportstatus'), nullable=True),
     sa.Column('priority', sa.Enum('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', name='reportpriority'), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
@@ -79,7 +79,7 @@ def upgrade() -> None:
     sa.Column('model_version_id', sa.Integer(), nullable=True),
     sa.Column('predicted_class', sa.String(), nullable=False),
     sa.Column('confidence', sa.Float(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.ForeignKeyConstraint(['model_version_id'], ['model_versions.id'], ),
     sa.ForeignKeyConstraint(['report_id'], ['reports.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -92,7 +92,7 @@ def upgrade() -> None:
     sa.Column('correct', sa.Boolean(), nullable=False),
     sa.Column('correct_class', sa.String(), nullable=True),
     sa.Column('reviewed_by', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.ForeignKeyConstraint(['prediction_id'], ['ai_predictions.id'], ),
     sa.ForeignKeyConstraint(['reviewed_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
