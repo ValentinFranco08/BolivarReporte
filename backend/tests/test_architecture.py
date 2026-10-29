@@ -33,8 +33,7 @@ class FakePredictor:
 
 
 def report_service(db, tmp_path):
-    return get_report_service(db, get_category_service(db),
-        get_classification_service(db, FakePredictor(), LocalFileStorage(tmp_path)), get_feedback_service(db))
+    return get_report_service(db, FakePredictor(), LocalFileStorage(tmp_path))
 
 
 def test_services_work_with_objects_without_http_or_weights():
@@ -54,7 +53,7 @@ def test_report_rolls_back_category_prediction_and_feedback(db, tmp_path, monkey
     service = report_service(db, tmp_path)
     def fail(*args, **kwargs):
         raise RuntimeError("Fallo al guardar feedback")
-    monkeypatch.setattr(service.feedback, "save", fail)
+    monkeypatch.setattr(service.feedback, "upsert", fail)
     with pytest.raises(RuntimeError, match="feedback"):
         service.create(schemas.ReportSubmission(image_path="/uploads/test.jpg", predicted_class="nueva",
             is_novel_category=True, embedding=[1, 0, 0]))
@@ -82,9 +81,10 @@ def test_merge_by_name_reassigns_reports(db):
     source = service.create_or_get("origen", "Animales")
     target = service.create_or_get("destino", "Animales")
     report = ReportRepository(db).add(models.Report(image_path="/uploads/test.jpg", category_id=source.id))
-    with UnitOfWork(db):
-        result = service.merge(source.id, target_category_name=target.name)
-    assert result.id == target.id
+    result = service.merge(schemas.CategoryMergeRequest(
+        source_category_id=source.id, target_category_name=target.name,
+    ))
+    assert result["target_id"] == target.id
     db.refresh(report)
     assert report.category_id == target.id
     assert not source.active
@@ -180,3 +180,65 @@ def test_controllers_and_ml_respect_boundaries():
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 assert not (node.module or "").startswith(("app.", "backend.", "fastapi", "sqlalchemy")), file
+
+
+def test_category_merge_rolls_back_reassigned_reports_and_centroids(db, monkeypatch):
+    service = get_category_service(db)
+    source = service.create_or_get("merge_source", "Animales", embedding=[1, 0, 0])
+    target = service.create_or_get("merge_target", "Animales", embedding=[0, 1, 0])
+    report = ReportRepository(db).add(models.Report(image_path="/uploads/pet.jpg", category_id=source.id))
+    db.commit()
+    original_centroid = target.embedding_centroid
+    reassign = service.reports.reassign_category
+
+    def fail_after_reassign(source_id, target_id):
+        reassign(source_id, target_id)
+        raise RuntimeError("Fallo después de reasignar")
+
+    monkeypatch.setattr(service.reports, "reassign_category", fail_after_reassign)
+    with pytest.raises(RuntimeError, match="reasignar"):
+        service.merge(schemas.CategoryMergeRequest(source_category_id=source.id, target_category_id=target.id))
+    db.refresh(source)
+    db.refresh(target)
+    db.refresh(report)
+    assert source.active is True
+    assert report.category_id == source.id
+    assert target.embedding_centroid == original_centroid
+    assert target.sample_count == 1
+
+
+def test_repeated_feedback_updates_one_record(db, tmp_path):
+    db.add(models.ModelVersion(name="multimodal-v1", version="test"))
+    db.commit()
+    report = report_service(db, tmp_path).create(schemas.ReportSubmission(image_path="/uploads/pet.jpg"))
+    service = get_feedback_service(db)
+    original_id = report.prediction.feedback.id
+    corrected = service.submit(report.prediction.id,
+        schemas.FeedbackCreate(correct=False, correct_class="animal_encontrado"), reviewer_id=None)
+    assert corrected.id == original_id
+    assert corrected.correct_class == "animal_encontrado"
+    confirmed = service.submit(report.prediction.id, schemas.FeedbackCreate(correct=True), reviewer_id=None)
+    assert confirmed.id == original_id
+    assert confirmed.correct_class is None
+    assert db.query(models.Feedback).count() == 1
+
+
+def test_lifespan_and_http_routes_share_the_injected_predictor(db, tmp_path):
+    from fastapi.testclient import TestClient
+    from app.main import create_app
+    from app.database import get_db
+    from app.infrastructure.predictor import LazyPredictor
+
+    factory = Mock(return_value=FakePredictor())
+    model = LazyPredictor(factory=factory)
+    application = create_app()
+    application.dependency_overrides[get_db] = lambda: db
+    application.dependency_overrides[get_predictor] = lambda: model
+    application.dependency_overrides[get_storage] = lambda: LocalFileStorage(tmp_path)
+    assert model.ready is False
+    with TestClient(application) as client:
+        assert client.get("/api/health").json()["model_ready"] is True
+        result = client.post("/api/ai/predict", files={"file": ("pet.jpg", b"photo", "image/jpeg")})
+        assert result.status_code == 200
+        assert result.json()["model_version"] == "test-v1"
+    factory.assert_called_once()

@@ -1,11 +1,5 @@
-from typing import Protocol
 from .base import Repository
 from ..models import Report, AnimalReportType
-
-class ReportStore(Protocol):
-    def get(self, entity_id: int) -> Report | None: ...
-    def add(self, entity: Report) -> Report: ...
-    def list(self, skip=0, limit=100, report_type=None) -> list[Report]: ...
 
 class ReportRepository(Repository[Report]):
     def __init__(self, session):

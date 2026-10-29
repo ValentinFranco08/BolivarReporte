@@ -13,9 +13,9 @@
 
 ## Arquitectura MVC y programación orientada a objetos
 
-El backend separa controladores FastAPI, servicios de negocio, repositorios SQLAlchemy e infraestructura. La vista es Next.js. ML cuenta con un `Trainer` común para ViT, RoBERTa y multimodal, adaptadores polimórficos, preprocesamiento compartido y checkpoints con metadatos.
+El backend separa controladores FastAPI, servicios de negocio, repositorios SQLAlchemy e infraestructura. La vista es Next.js. ML cuenta con un `Trainer` común para ViT, RoBERTa y multimodal, una interfaz común de modelos, preprocesamiento compartido y checkpoints con metadatos.
 
-La [guía de arquitectura](docs/ARQUITECTURA.md) explica las clases, principios de POO, diagramas UML, transacciones, comandos de mantenimiento y verificación. `main.py` solo ensambla la aplicación; las migraciones, semillas y reindexación son comandos explícitos.
+La [guía de arquitectura](docs/ARQUITECTURA.md) explica las clases, principios de POO, diagramas UML, transacciones, comandos de mantenimiento y verificación. Para empezar, seguí los tres recorridos de lectura al inicio de esa guía: clasificar, crear un reporte y entrenar. `main.py` solo ensambla la aplicación; las migraciones, semillas y reindexación son comandos explícitos.
 
 ---
 
@@ -76,7 +76,7 @@ Para que un vecino de a pie no tenga que completar formularios técnicos complej
 * **Auto-Crop Multi-Escala:** Detección y recorte focalizado automático del animal para extraer embeddings limpios sin interferencia del fondo de la calle o patio.
 * **Score Híbrido de Coincidencia (Perdido vs Hallado):**
   $$\text{Score Final} = w_{\text{vis}} \cdot \text{Sim}_{\text{Coseno}} + w_{\text{sem}} \cdot \text{Sim}_{\text{Semántica}} + w_{\text{geo}} \cdot \text{Factor}_{\text{Proximidad}}$$
-* **Aprendizaje Continuo (Active Learning Replay):** Script (`train_incremental.py`) con *Experience Replay* que aprovecha las validaciones de Zoonosis para reajustar los pesos para reducir el riesgo de olvido catastrófico.
+* **Aprendizaje Continuo (Active Learning Replay):** Entrenamiento en `ml/training/incremental.py` con *Experience Replay* que aprovecha las validaciones de Zoonosis para reajustar los pesos para reducir el riesgo de olvido catastrófico.
 
 ### Resultados en el Conjunto de Prueba (*Test Set*):
 * **Accuracy:** **96.67%** (58 aciertos sobre 60 casos de prueba independientes).
@@ -128,7 +128,7 @@ ml/
 ├── models/                  # Encoders, fusión, multimodal y baselines
 ├── data/                    # Dataset, validación y preparación
 ├── preprocessing/           # Imagen y texto
-├── training/                # Trainer, fases y experimentos
+├── training/                # Preparación, Trainer e incremental
 ├── evaluation/              # Evaluator y métricas
 ├── inference/               # Predictor y checkpoints
 ├── configs/                 # Configuración de experimentos

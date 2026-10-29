@@ -48,9 +48,10 @@ def seed_categories_and_centroids():
     print(f"🌱 Sembrando categorías y centroides iniciales ({len(SEED_CATEGORIES)} categorías base)...")
 
     try:
-        from app.ai_service import ai_service
-        ai_service.initialize()
-        use_real_model = ai_service.ready
+        from app.dependencies import get_predictor
+        predictor = get_predictor()
+        predictor.initialize()
+        use_real_model = predictor.ready
     except Exception:
         use_real_model = False
 
@@ -91,7 +92,7 @@ def seed_categories_and_centroids():
                 img = Image.new('RGB', (224, 224), color=(128, 128, 128))
                 buf = io.BytesIO()
                 img.save(buf, format='JPEG')
-                vec = ai_service.extract_embedding(buf.getvalue(), f"{name}. {desc}")
+                vec = predictor.extract_embedding(buf.getvalue(), f"{name}. {desc}")
             else:
                 vec = generate_pseudo_embedding(f"{area} {name} {desc}")
 

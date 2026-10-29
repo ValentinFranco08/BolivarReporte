@@ -46,12 +46,11 @@ def main():
     from app.services.maintenance import BootstrapService, ReindexService
     with SessionLocal() as session:
         if args.command == "seed":
-            from app import auth
             BootstrapService(CategoryRepository(session), UserRepository(session),
-                PredictionRepository(session), auth, UnitOfWork(session)).seed(args.demo_users)
+                PredictionRepository(session), UnitOfWork(session)).seed(args.demo_users)
         else:
-            from app.dependencies import predictor, storage
-            print(ReindexService(ReportRepository(session), predictor, storage, UnitOfWork(session)).run())
+            from app.dependencies import get_predictor, get_storage
+            print(ReindexService(ReportRepository(session), get_predictor(), get_storage(), UnitOfWork(session)).run())
 
 if __name__ == "__main__":
     main()

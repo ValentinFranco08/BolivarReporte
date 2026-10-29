@@ -1,7 +1,9 @@
 import math
 import json
 import pytest
-from app import crud, models
+from app import models, schemas
+from app.dependencies import get_category_service
+from app.infrastructure.unit_of_work import UnitOfWork
 
 
 def test_vector_normalization_and_update(db):
@@ -19,7 +21,9 @@ def test_vector_normalization_and_update(db):
 
     # 2. Vector inicial: [1.0, 0.0, 0.0]
     vec1 = [1.0, 0.0, 0.0]
-    cat_updated = crud.update_category_centroid(db, cat.id, vec1)
+    service = get_category_service(db)
+    with UnitOfWork(db):
+        cat_updated = service.update_centroid(cat.id, vec1)
     assert cat_updated.sample_count == 1
     centroid1 = json.loads(cat_updated.embedding_centroid)
     assert pytest.approx(centroid1[0], 0.001) == 1.0
@@ -28,7 +32,8 @@ def test_vector_normalization_and_update(db):
     # 3. Vector 2: [0.0, 1.0, 0.0]
     # El promedio de [1, 0, 0] y [0, 1, 0] normalizado debe ser [1/sqrt(2), 1/sqrt(2), 0]
     vec2 = [0.0, 1.0, 0.0]
-    cat_updated2 = crud.update_category_centroid(db, cat.id, vec2)
+    with UnitOfWork(db):
+        cat_updated2 = service.update_centroid(cat.id, vec2)
     assert cat_updated2.sample_count == 2
     centroid2 = json.loads(cat_updated2.embedding_centroid)
     
@@ -68,7 +73,11 @@ def test_merge_categories_centroids(db):
     db.commit()
 
     # Fusionar A en B
-    merged = crud.merge_categories(db, source_category_id=cat_a.id, target_category_id=cat_b.id)
+    service = get_category_service(db)
+    result = service.merge(schemas.CategoryMergeRequest(
+        source_category_id=cat_a.id, target_category_id=cat_b.id,
+    ))
+    merged = db.get(models.Category, result["target_id"])
     assert merged.id == cat_b.id
     assert merged.sample_count == 4
     assert not cat_a.active

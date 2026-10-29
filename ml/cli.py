@@ -23,10 +23,10 @@ def main(argv=None):
     commands.add_parser("incremental")
     args, remaining = parser.parse_known_args(argv)
     if args.command == "train":
-        from ml.training.experiment import training_main
+        from ml.training.train import training_main
         return training_main(args.model, remaining)
     if args.command == "incremental":
-        from ml.training.train_incremental import main as incremental
+        from ml.training.incremental import main as incremental
         return incremental(remaining)
     if remaining:
         parser.error(f"Argumentos desconocidos: {' '.join(remaining)}")
@@ -37,19 +37,20 @@ def main(argv=None):
         from ml.data.preparation import DatasetPreparation
         result = DatasetPreparation().run(args.source, args.output, args.per_class, Path(args.image_root))
     else:
-        from ml.training.experiment import ExperimentRunner, load_config
-        from ml.training.engine import ADAPTERS, Evaluator
+        from ml.training.train import load_config, create_model, create_loaders, create_loss
+        from ml.evaluation.evaluator import Evaluator
+        from ml.inference.checkpoints import CheckpointLoader
         from ml.device import get_device
-        runner = ExperimentRunner(args.model, load_config(args.model, args.config))
+        config = load_config(args.model, args.config)
         device = get_device()
-        artifact = runner.checkpoints.load(args.checkpoint, device)
+        artifact = CheckpointLoader().load(args.checkpoint, device)
         from ml.taxonomy import IDX_TO_LABEL
         if artifact.labels != tuple(IDX_TO_LABEL[i] for i in sorted(IDX_TO_LABEL)):
             raise ValueError("El checkpoint utiliza una taxonomía diferente a la del dataset")
-        model = runner.create_model().to(device)
+        model = create_model(args.model).to(device)
         model.load_state_dict(artifact.state_dict)
-        loss, accuracy, f1, report, matrix = Evaluator(ADAPTERS[args.model](), device, artifact.labels).evaluate(
-            model, runner.create_loaders()[2], runner.criterion().to(device), detailed=True)
+        loss, accuracy, f1, report, matrix = Evaluator(device, artifact.labels).evaluate(
+            model, create_loaders(config)[2], create_loss(args.model, config).to(device), detailed=True)
         result = {"loss": loss, "accuracy": accuracy, "macro_f1": f1,
                   "classification_report": report, "confusion_matrix": matrix.tolist()}
     print(json.dumps(result, indent=2, ensure_ascii=False))

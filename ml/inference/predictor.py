@@ -41,7 +41,7 @@ class MultimodalPredictor:
 
         if checkpoint is None:
             print("⚠️  No se encontró ningún checkpoint del modelo multimodal.")
-            print("    Ejecutá primero: python3 ml/training/train_multimodal.py")
+            print("    Ejecutá primero: python -m ml.cli train --model multimodal")
             return
 
         try:

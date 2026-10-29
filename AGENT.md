@@ -24,13 +24,12 @@ backend/app/
 ├── dependencies.py     # Composición de objetos
 ├── models.py           # Entidades SQLAlchemy
 ├── schemas.py          # Contratos Pydantic
-├── crud.py             # Fachada compatible para scripts anteriores
-└── ai_service.py       # Fachada compatible; inferencia real en ml/
+└── auth.py             # Dependencias HTTP de autenticación
 ml/
 ├── models/             # Encoders, fusión, clasificador y baselines
 ├── data/               # Dataset, validación y preparación
 ├── preprocessing/      # Imagen y texto compartidos
-├── training/           # Trainer, fases, experimentos e incremental
+├── training/           # train.py, trainer.py e incremental.py
 ├── evaluation/         # Evaluator y métricas
 ├── inference/          # Predictor, checkpoints y sugerencias
 ├── configs/            # Experimentos JSON
@@ -39,7 +38,9 @@ frontend/               # Vista Next.js
 backend/scripts/        # Mantenimiento explícito y puente de feedback
 ```
 
-Los servicios coordinan transacciones con `UnitOfWork`. Los controladores no consultan la base ni ejecutan lógica neuronal. ML no debe importar FastAPI, SQLAlchemy ni módulos del backend. El polimorfismo de `BatchAdapter` permite compartir `Trainer` entre los tres modelos.
+Las fachadas históricas `crud.py`, `ai_service.py` y `llm_categorizer.py` fueron retiradas tras migrar sus consumidores. Usar servicios, repositorios o `ml.inference.category_suggester` directamente. `dependencies.get_predictor()` y `get_storage()` son los proveedores compartidos. Las funciones de contraseñas y JWT están en `infrastructure/security.py`; `auth.py` contiene las dependencias HTTP.
+
+Los servicios coordinan transacciones con `UnitOfWork`. Los controladores no consultan la base ni ejecutan lógica neuronal. ML no debe importar FastAPI, SQLAlchemy ni módulos del backend. Los tres modelos comparten una interfaz de entradas por nombre y se entrenan directamente con `Trainer`, sin adaptadores ni fábricas adicionales.
 
 Las migraciones y datos iniciales se ejecutan con `backend/scripts/manage.py migrate` y `seed`. No reintroducir creación de tablas, usuarios o reindexación en el startup HTTP. `dev.sh` ya ejecuta mantenimiento explícito y no sincroniza/trunca bases.
 
@@ -100,7 +101,7 @@ python backend/scripts/export_dataset.py --output dataset_correcciones.json
 ## 🧠 Flujo de Feedback (Human-in-the-Loop)
 - **Ciudadano (`/reportes/nuevo`):** Si la IA sugiere una categoría errónea, el usuario puede corregirla antes de confirmar. El backend guarda la corrección en `feedback` con `correct=False`.
 - **Administrador (`/dashboard`):** Puede evaluar cualquier reporte y cambiar su clasificación o prioridad en tiempo real.
-- **Ciclo de Reentrenamiento:** Las correcciones exportadas alimentan directamente el script `ml/training/train_multimodal.py` para fine-tuning.
+- **Ciclo de Reentrenamiento:** Las correcciones exportadas se consumen con `python -m ml.cli incremental --feedback archivo.json`; `backend/scripts/retrain.py` coordina el marcado de feedback procesado.
 
 ## 🚦 Módulo Tránsito y Estacionamiento
 

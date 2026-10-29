@@ -37,19 +37,20 @@ def seed():
             db.add(model_v1)
 
         print("Poblando usuarios demo...")
-        from app import auth, models
+        from app import models
+        from app.infrastructure.security import get_password_hash
         if not db.query(models.User).filter_by(email="admin@bolivar.gob.ar").first():
             db.add(models.User(
                 name="Administrador Municipal",
                 email="admin@bolivar.gob.ar",
-                password_hash=auth.get_password_hash("admin123"),
+                password_hash=get_password_hash("admin123"),
                 role=models.UserRole.ADMIN,
             ))
         if not db.query(models.User).filter_by(email="vecino@bolivar.gob.ar").first():
             db.add(models.User(
                 name="Vecino Bolívar",
                 email="vecino@bolivar.gob.ar",
-                password_hash=auth.get_password_hash("vecino123"),
+                password_hash=get_password_hash("vecino123"),
                 role=models.UserRole.CITIZEN,
             ))
 
@@ -64,7 +65,8 @@ def seed():
         if db.query(models.Report).count() == 0:
             uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
             os.makedirs(uploads_dir, exist_ok=True)
-            from app.ai_service import ai_service
+            from app.dependencies import get_predictor
+            predictor = get_predictor()
             import urllib.request
 
             demo_sources = {
@@ -86,7 +88,7 @@ def seed():
                 if os.path.exists(fpath):
                     try:
                         with open(fpath, 'rb') as f:
-                            demo_embeddings[name] = json.dumps(ai_service.extract_pet_embedding(f.read()))
+                            demo_embeddings[name] = json.dumps(predictor.extract_pet_embedding(f.read()))
                     except Exception as e:
                         print(f"Error extrayendo embedding para {name}: {e}")
 

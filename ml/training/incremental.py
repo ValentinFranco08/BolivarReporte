@@ -10,7 +10,7 @@ from ml.preprocessing.images import ImagePreprocessor
 from ml.preprocessing.text import TextPreprocessor
 from ml.inference.checkpoints import CheckpointLoader
 from ml.device import get_device
-from .engine import Trainer, MultimodalBatchAdapter
+from .trainer import Trainer
 
 class FeedbackDataset(Dataset):
     def __init__(self, samples, tokenizer):
@@ -70,10 +70,29 @@ class IncrementalTrainer:
         tokenizer = RobertaTokenizer.from_pretrained("bertin-project/bertin-roberta-base-spanish")
         loader = DataLoader(FeedbackDataset(mixed, tokenizer), batch_size=8, shuffle=True)
         optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-4)
-        trainer = Trainer(model, MultimodalBatchAdapter(), torch.nn.CrossEntropyLoss(), device, labels)
+        trainer = Trainer(model, torch.nn.CrossEntropyLoss(), device, labels)
         for _ in range(epochs):
             trainer.train_epoch(loader, optimizer)
         self.checkpoints.save(output, model, labels=labels, optimizer=optimizer, epoch=epochs,
                               config={"training": "incremental-replay", "replay_samples": summary["replay"]})
         summary["saved"] = True
         return summary
+
+
+def main(argv=None):
+    import argparse
+    import json
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--feedback", required=True, help="JSON con image, text, label y feedback_id opcional")
+    parser.add_argument("--historical", default="ml/datasets/dataset.json")
+    parser.add_argument("--checkpoint", default="ml/checkpoints/multimodal/best_multimodal_finetuned.pt")
+    parser.add_argument("--output", default="ml/checkpoints/multimodal/best_incremental.pt")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--epochs", type=int, default=3)
+    args = parser.parse_args(argv)
+    result = IncrementalTrainer().run(json.loads(Path(args.feedback).read_text()),
+        json.loads(Path(args.historical).read_text()), args.checkpoint, args.output, args.epochs, args.dry_run)
+    print(json.dumps(result, indent=2))
+
+if __name__ == "__main__":
+    main()

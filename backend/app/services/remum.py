@@ -39,14 +39,14 @@ class RemumService:
         image_path = self.storage.save(image, filename) if image is not None else None
         try:
             with self.unit_of_work:
-                record = self.create_record(user.id, data, image_path)
+                record = self._create_record(user.id, data, image_path)
             return record
         except Exception:
             if image_path:
                 self.storage.delete(image_path)
             raise
 
-    def create_record(self, user_id, data, image_path=None):
+    def _create_record(self, user_id, data, image_path=None):
         return self.records.add(models.RemumRecord(
             **data.model_dump(), user_id=user_id, image_path=image_path, qr_code_id=self.qr_codes.unique()))
 
@@ -69,10 +69,10 @@ class RemumService:
             record = self.get(code)
             if record.user_id != current_user.id and current_user.role != models.UserRole.ADMIN:
                 raise PermissionDeniedError("No tienes permiso para emitir alertas para esta mascota")
-            self.create_alert(record, lat, lng)
+            self._create_alert(record, lat, lng)
         return record
 
-    def create_alert(self, record, lat=None, lng=None):
+    def _create_alert(self, record, lat=None, lng=None):
         record.status = models.RemumStatus.EXTRAVIADO
         self.reports.add(models.Report(
             user_id=record.user_id,

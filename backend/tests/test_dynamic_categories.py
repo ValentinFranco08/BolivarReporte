@@ -1,6 +1,5 @@
-import json
-from app.llm_categorizer import suggest_category
-from app import crud, models
+from ml.inference.category_suggester import suggest_category
+from app.dependencies import get_category_service
 
 
 def test_suggest_category_municipal_heuristics():
@@ -31,13 +30,14 @@ def test_admin_category_management_endpoints(client, db):
     headers = {"Authorization": f"Bearer {token}"}
 
     # 1. Crear categoría candidata
-    cat_novel = crud.create_or_get_novel_category(
-        db,
+    service = get_category_service(db)
+    cat_novel = service.create_or_get(
         name="orugas_plaga",
         area="Espacios Verdes",
         description="Plaga de orugas en la plaza",
         embedding=[0.5, 0.5, 0.0]
     )
+    db.commit()
     assert not cat_novel.is_verified
 
     # 2. Listar pendientes
@@ -57,7 +57,8 @@ def test_admin_category_management_endpoints(client, db):
     assert res_app.json()["name"] == "plaga_orugas"
 
     # 4. Probar fusión
-    cat_dest = crud.create_or_get_novel_category(db, name="zoonosis_general", area="Animales")
+    cat_dest = service.create_or_get(name="zoonosis_general", area="Animales")
+    db.commit()
     res_merge = client.post(
         "/api/admin/categories/merge",
         headers=headers,

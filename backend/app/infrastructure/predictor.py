@@ -36,5 +36,3 @@ class LazyPredictor:
     def extract_embedding(self, image_bytes, text):
         with self._lock:
             return self.initialize().extract_embedding(image_bytes, text)
-
-predictor = LazyPredictor()

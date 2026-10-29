@@ -12,8 +12,7 @@ class EpochMetrics:
         return self.loss, self.accuracy, self.macro_f1
 
 class Evaluator:
-    def __init__(self, adapter, device, labels):
-        self.adapter = adapter
+    def __init__(self, device, labels):
         self.device = device
         self.labels = tuple(labels)
 
@@ -23,7 +22,8 @@ class Evaluator:
         with torch.no_grad():
             for batch in loader:
                 targets = batch["label"].to(self.device)
-                logits = model(**self.adapter.inputs(batch, self.device))
+                inputs = {name: value.to(self.device) for name, value in batch.items() if name != "label"}
+                logits = model(**inputs)
                 losses.append(float(criterion(logits, targets).item()))
                 actual.extend(targets.cpu().tolist())
                 predicted.extend(logits.argmax(dim=-1).cpu().tolist())

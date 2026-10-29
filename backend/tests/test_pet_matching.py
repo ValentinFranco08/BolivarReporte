@@ -1,8 +1,7 @@
 import io
-import json
 from PIL import Image
-from app.ai_service import ai_service, haversine_km, calculate_pet_match_score, calculate_cosine_similarity
-from app import models, crud
+from app.dependencies import get_predictor
+from app.services.similarity import haversine_km, calculate_pet_match_score
 
 def test_haversine_bolivar():
     # Centro Cívico Bolívar: -36.2333, -61.1167
@@ -27,7 +26,7 @@ def test_pet_embedding_extraction():
     img = Image.new("RGB", (100, 100), color="goldenrod")
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
-    embedding = ai_service.extract_pet_embedding(buf.getvalue())
+    embedding = get_predictor().extract_pet_embedding(buf.getvalue())
     assert isinstance(embedding, list)
     assert len(embedding) == 768
     # Comprobar normalización L2 (norma ~ 1.0)

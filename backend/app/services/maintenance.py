@@ -1,14 +1,14 @@
 """Operaciones explícitas de datos, fuera del arranque HTTP."""
 import json
 from .. import models
+from ..infrastructure.security import get_password_hash
 from ml.taxonomy import SEED_CATEGORIES
 
 class BootstrapService:
-    def __init__(self, categories, users, predictions, passwords, unit_of_work):
+    def __init__(self, categories, users, predictions, unit_of_work):
         self.categories = categories
         self.users = users
         self.predictions = predictions
-        self.passwords = passwords
         self.unit_of_work = unit_of_work
 
     def seed(self, demo_users=False):
@@ -26,7 +26,7 @@ class BootstrapService:
                 ):
                     if self.users.by_email(email) is None:
                         self.users.add(models.User(name=name, email=email, role=role,
-                            password_hash=self.passwords.get_password_hash(password)))
+                            password_hash=get_password_hash(password)))
 
 class ReindexService:
     def __init__(self, reports, predictor, storage, unit_of_work):

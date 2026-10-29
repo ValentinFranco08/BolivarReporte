@@ -1,4 +1,3 @@
-from ..models import Feedback
 from ..core.errors import ApplicationError, NotFoundError
 
 class FeedbackService:
@@ -7,24 +6,13 @@ class FeedbackService:
         self.predictions = predictions
         self.unit_of_work = unit_of_work
 
-    def save(self, prediction_id, correct, correct_class, reviewer_id):
-        existing = self.feedback.by_prediction(prediction_id)
-        if existing is None:
-            existing = self.feedback.add(Feedback(prediction_id=prediction_id,
-                correct=correct, correct_class=correct_class, reviewed_by=reviewer_id))
-        else:
-            existing.correct = correct
-            existing.correct_class = correct_class
-            existing.reviewed_by = reviewer_id
-        return existing
-
     def submit(self, prediction_id, feedback, reviewer_id):
         if not feedback.correct and not feedback.correct_class:
             raise ApplicationError("Debe indicar la clase correcta cuando la predicción es incorrecta.")
         with self.unit_of_work:
             if self.predictions.get(prediction_id) is None:
                 raise NotFoundError("Predicción no encontrada")
-            result = self.save(prediction_id, feedback.correct,
+            result = self.feedback.upsert(prediction_id, feedback.correct,
                                feedback.correct_class if not feedback.correct else None, reviewer_id)
         return result
 
