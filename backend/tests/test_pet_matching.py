@@ -1,7 +1,40 @@
 import io
+import json
+import pytest
 from PIL import Image
+from app.models import Report, AnimalReportType, PetType
 from app.dependencies import get_predictor
 from app.services.similarity import haversine_km, calculate_pet_match_score
+
+
+@pytest.mark.parametrize("report_type", ["perdido", "encontrado", "en_transito"])
+def test_matches_include_similar_reports_of_the_same_type(client, db, report_type):
+    embedding = json.dumps([1.0] + [0.0] * 767)
+
+    def report(name, **overrides):
+        fields = dict(description="Perro dorado", pet_name=name, image_path="/uploads/test.jpg",
+                      report_type=AnimalReportType(report_type), pet_type=PetType.PERRO,
+                      embedding=embedding, latitude=-36.23, longitude=-61.11,
+                      is_resolved=False)
+        fields.update(overrides)
+        return Report(**fields)
+
+    milo = report("Milo")
+    kinoto = report("Kinoto")
+    excluded = [report("Resuelto", is_resolved=True),
+                report("Gato", pet_type=PetType.GATO),
+                report("Adopción", report_type=AnimalReportType.ADOPCION),
+                report("Sin vector", embedding=None),
+                report("Diferente", embedding=json.dumps([0.0, 1.0] + [0.0] * 766))]
+    db.add_all([milo, kinoto, *excluded])
+    db.commit()
+
+    response = client.get(f"/api/reports/{milo.id}/matches")
+    assert response.status_code == 200
+    matches = response.json()["matches"]
+    assert [item["report"]["id"] for item in matches] == [kinoto.id]
+    assert matches[0]["visual_similarity"] == 1.0
+
 
 def test_haversine_bolivar():
     # Centro Cívico Bolívar: -36.2333, -61.1167

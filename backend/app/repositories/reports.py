@@ -17,9 +17,9 @@ class ReportRepository(Repository[Report]):
             Report.is_resolved.is_(False)
         ).order_by(Report.created_at.desc()).all()
 
-    def matching_candidates(self, target, opposite_types):
+    def matching_candidates(self, target, candidate_types):
         return self.session.query(Report).filter(
-            Report.id != target.id, Report.report_type.in_(opposite_types),
+            Report.id != target.id, Report.report_type.in_(candidate_types),
             Report.pet_type == target.pet_type, Report.is_resolved.is_(False),
             Report.embedding.isnot(None)
         ).all()

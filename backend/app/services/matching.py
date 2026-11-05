@@ -7,15 +7,16 @@ from .similarity import (calculate_cosine_similarity, calculate_semantic_similar
 logger = logging.getLogger(__name__)
 
 class MatchingPolicy:
-    OPPOSITE_TYPES = {
-        "perdido": (AnimalReportType.ENCONTRADO, AnimalReportType.EN_TRANSITO),
-        "encontrado": (AnimalReportType.PERDIDO,),
-        "en_transito": (AnimalReportType.PERDIDO,),
-    }
+    SEARCHABLE_TYPES = (
+        AnimalReportType.PERDIDO,
+        AnimalReportType.ENCONTRADO,
+        AnimalReportType.EN_TRANSITO,
+    )
 
-    def opposite_types(self, report_type):
-        return self.OPPOSITE_TYPES.get(report_type,
-            (AnimalReportType.PERDIDO, AnimalReportType.ENCONTRADO))
+    def candidate_types(self, report_type):
+        # Dos personas pueden publicar al mismo animal con el mismo tipo de reporte.
+        # Adopciones y alertas no participan de la búsqueda de mascotas.
+        return self.SEARCHABLE_TYPES if report_type in self.SEARCHABLE_TYPES else ()
 
     def score(self, target, candidate, embedding):
         visual = calculate_cosine_similarity(embedding, json.loads(candidate.embedding))
@@ -43,7 +44,7 @@ class MatchingService:
             embedding = json.loads(target.embedding)
         except (ValueError, TypeError):
             return []
-        candidates = self.reports.matching_candidates(target, self.policy.opposite_types(target.report_type))
+        candidates = self.reports.matching_candidates(target, self.policy.candidate_types(target.report_type))
         scored = []
         for candidate in candidates:
             try:
