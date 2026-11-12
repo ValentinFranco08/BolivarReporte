@@ -23,9 +23,9 @@ import {
   aprobarCategoria,
   fusionarCategorias,
   urlDeImagen,
-  type Reporte,
   type CategoriaPendiente,
 } from '@/lib/api';
+import type { Reporte } from '@/models/reports';
 import {
   AREAS,
   CATEGORIAS,

@@ -1,4 +1,4 @@
-from ..core.errors import ApplicationError, NotFoundError
+from .errors import ApplicationError, NotFoundError
 
 class FeedbackService:
     def __init__(self, feedback, predictions, unit_of_work):

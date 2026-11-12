@@ -101,7 +101,7 @@ TRÁNSITO_Y_ESTACIONAMIENTO
 
 - [x] Taxonomía 23 clases, jerarquía, prioridad, disclaimer (`ml/taxonomy.py`)
 - [x] `MultimodalDataset` y `BolivarMultimodalModel` leen `NUM_CLASSES` desde taxonomía
-- [x] Plantillas de texto sintético para las 9 carpetas `transit_*` (`ml/datasets/build_dataset.py`)
+- [x] Plantillas de texto sintético para las 9 carpetas `transit_*` (`ml/scripts/collection/build_dataset.py`)
 - [x] `ai_service` carga el **número de clases del checkpoint** (sigue siendo 14) y adjunta `classification`
 - [x] `backend/scripts/seed.py` usa `SEED_CATEGORIES`
 - [x] Dataset original de 14 hojas ~100 fotos/clase (`local_images/`)
@@ -110,9 +110,9 @@ TRÁNSITO_Y_ESTACIONAMIENTO
 ### Pendiente (orden de ejecución)
 
 - [x] **Fase A — Frontend:** listas de categorías, dashboard, tarjeta IA (jerarquía, prioridad, disclaimer, `requires_review`)
-- [ ] **Fase B — Dataset:** script `ml/datasets/collect_transito_100.py` + 100 fotos/clase × 9 hojas
+- [ ] **Fase B — Dataset:** script `ml/scripts/collection/collect_transito_100.py` + 100 fotos/clase × 9 hojas
 - [ ] **Fase C — Seed DB:** `python backend/scripts/seed.py` (Postgres `localhost:5433`)
-- [ ] **Fase D — Rebuild:** `python ml/datasets/build_dataset.py` → `dataset.json` 23 clases
+- [ ] **Fase D — Rebuild:** `python ml/scripts/collection/build_dataset.py` → `dataset.json` 23 clases
 - [ ] **Fase E — Reentrenar:** `python ml/training/train_multimodal.py` (head 23 clases; no reutilizar el head de 14)
 - [ ] **Fase F — Evaluar:** confusion matrix, macro F1; comparar con el modelo 14-way solo como referencia histórica
 - [ ] **Fase G — Integración:** reiniciar uvicorn, probar `/api/ai/predict` con foto de tránsito
@@ -140,9 +140,9 @@ El usuario ya puede **elegir a mano** las categorías nuevas; la IA seguirá pre
 
 ### Fase B — 100 imágenes por clase de tránsito
 
-**Script nuevo:** `ml/datasets/collect_transito_100.py`
+**Script nuevo:** `ml/scripts/collection/collect_transito_100.py`
 
-Reutilizar helpers de `ml/datasets/fill_missing_to_100.py`:
+Reutilizar helpers de `ml/scripts/collection/fill_missing_to_100.py`:
 
 - fingerprint (evitar duplicados)
 - mínimo ~220 px
@@ -199,7 +199,7 @@ Conexión: `postgresql://postgres:postgres@localhost:5433/bolivar_responde`
 
 ```bash
 source venv/bin/activate
-python ml/datasets/build_dataset.py
+python ml/scripts/collection/build_dataset.py
 ```
 
 Verificar que `dataset.json` tenga 23 labels y textos para `transit_*`.

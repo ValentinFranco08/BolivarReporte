@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Icono } from '@/components/ui/Icono';
 import { Aviso, Compas } from '@/components/ui/primitivas';
 import { MarcaArea, MarcaEstado, MarcaPrioridad, NumeroParcela } from '@/components/ui/marcas';
-import { ErrorAPI, listarReportes, urlDeImagen, type Reporte } from '@/lib/api';
+import { ErrorAPI, listarReportes, urlDeImagen } from '@/lib/api';
+import type { Reporte } from '@/models/reports';
 import { AREAS, ESTADO_EXPLICACION, etiquetaLegible } from '@/lib/taxonomy';
 
 /**

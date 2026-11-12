@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form
-from .. import schemas, auth
+from . import schemas, auth
 from ..dependencies import get_report_service, get_matching_service, get_classification_service
 
 router = APIRouter()

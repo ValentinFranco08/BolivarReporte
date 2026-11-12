@@ -20,8 +20,8 @@ import sys
 # Agregar la ruta del backend al sys.path para poder importar app.models
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app.models import Base
-from app.database import SQLALCHEMY_DATABASE_URL
+from app import models  # Registra las entidades para autogenerate.
+from app.dao.database import Base, SQLALCHEMY_DATABASE_URL
 
 config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 

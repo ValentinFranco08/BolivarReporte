@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from .. import schemas, auth
+from . import schemas, auth
 from ..dependencies import get_category_service
 
 router = APIRouter()

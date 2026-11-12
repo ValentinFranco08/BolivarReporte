@@ -19,7 +19,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(BACKEND_DIR, '..'))
 sys.path.insert(0, BACKEND_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from app.database import SessionLocal, engine, Base
+from app.dao.database import SessionLocal, engine, Base
 from app import models
 from ml.taxonomy import SEED_CATEGORIES
 

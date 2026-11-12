@@ -1,7 +1,7 @@
 """Crear, consultar y actualizar reportes; una transacción por operación completa."""
 import json
-from .. import models, schemas
-from ..core.errors import NotFoundError
+from .. import models
+from .errors import NotFoundError
 
 
 class ReportService:
@@ -27,9 +27,14 @@ class ReportService:
             # 2. Vincular al usuario y persistir solamente los campos del reporte.
             user = current_user or self.users.default_citizen()
             user_id = user.id if user else None
-            fields = data.model_dump(include=set(schemas.ReportCreate.model_fields))
             report = self.reports.add(models.Report(
-                **fields, image_path=data.image_path, user_id=user_id,
+                description=data.description,
+                latitude=data.latitude, longitude=data.longitude, address=data.address,
+                report_type=data.report_type, pet_type=data.pet_type, pet_name=data.pet_name,
+                pet_breed=data.pet_breed, color_description=data.color_description,
+                health_status=data.health_status, is_resolved=data.is_resolved,
+                contact_name=data.contact_name, contact_phone=data.contact_phone,
+                category_id=data.category_id, image_path=data.image_path, user_id=user_id,
                 is_novel_category=bool(data.is_novel_category),
                 embedding=json.dumps(data.embedding) if data.embedding else None,
             ))

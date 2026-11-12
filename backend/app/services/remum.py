@@ -1,7 +1,7 @@
 import secrets
 import string
 from .. import models
-from ..core.errors import ApplicationError, NotFoundError, PermissionDeniedError
+from .errors import ApplicationError, NotFoundError, PermissionDeniedError
 
 class QrCodeGenerator:
     def __init__(self, repository):

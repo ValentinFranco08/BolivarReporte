@@ -10,7 +10,7 @@ def migrate(adopt_existing=False):
     from alembic import command
     from alembic.config import Config
     from sqlalchemy import inspect
-    from app.database import engine
+    from app.dao.database import engine
     config = Config(str(ROOT / "backend/alembic.ini"))
     inspector = inspect(engine)
     tables = set(inspector.get_table_names())
@@ -37,20 +37,20 @@ def main():
     args = parser.parse_args()
     if args.command == "migrate":
         return migrate(args.adopt_existing)
-    from app.database import SessionLocal
-    from app.infrastructure.unit_of_work import UnitOfWork
-    from app.repositories.categories import CategoryRepository
-    from app.repositories.users import UserRepository
-    from app.repositories.predictions import PredictionRepository
-    from app.repositories.reports import ReportRepository
+    from app.dao.database import SessionLocal
+    from app.dao.unit_of_work import UnitOfWork
+    from app.dao.categories import CategoryDAO
+    from app.dao.users import UserDAO
+    from app.dao.predictions import PredictionDAO
+    from app.dao.reports import ReportDAO
     from app.services.maintenance import BootstrapService, ReindexService
     with SessionLocal() as session:
         if args.command == "seed":
-            BootstrapService(CategoryRepository(session), UserRepository(session),
-                PredictionRepository(session), UnitOfWork(session)).seed(args.demo_users)
+            BootstrapService(CategoryDAO(session), UserDAO(session),
+                PredictionDAO(session), UnitOfWork(session)).seed(args.demo_users)
         else:
             from app.dependencies import get_predictor, get_storage
-            print(ReindexService(ReportRepository(session), get_predictor(), get_storage(), UnitOfWork(session)).run())
+            print(ReindexService(ReportDAO(session), get_predictor(), get_storage(), UnitOfWork(session)).run())
 
 if __name__ == "__main__":
     main()

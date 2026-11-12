@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Reporte, urlDeImagen } from '@/lib/api';
+import { urlDeImagen } from '@/lib/api';
+import type { Reporte } from '@/models/reports';
 import { Icono } from '@/components/ui/Icono';
 
 export function PetCard({ reporte, onVerMatches }: { reporte: Reporte; onVerMatches?: (reporte: Reporte) => void }) {

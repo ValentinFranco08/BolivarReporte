@@ -4,7 +4,7 @@ import argparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app.database import SessionLocal
+from app.dao.database import SessionLocal
 from app.models import Category, ModelVersion
 
 import sys
@@ -38,7 +38,7 @@ def seed():
 
         print("Poblando usuarios demo...")
         from app import models
-        from app.infrastructure.security import get_password_hash
+        from app.security.credentials import get_password_hash
         if not db.query(models.User).filter_by(email="admin@bolivar.gob.ar").first():
             db.add(models.User(
                 name="Administrador Municipal",

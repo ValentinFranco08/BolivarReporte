@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Icono } from '@/components/ui/Icono';
-import { ErrorAPI, listarReportes, listarComunitarios, type Reporte } from '@/lib/api';
+import { ErrorAPI, listarReportes, listarComunitarios } from '@/lib/api';
+import type { Reporte } from '@/models/reports';
 
 const Plano = dynamic(() => import('@/components/ui/Map'), {
   ssr: false,

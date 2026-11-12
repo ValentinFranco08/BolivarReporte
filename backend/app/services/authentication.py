@@ -1,8 +1,8 @@
 """Casos de uso de registro y acceso; independientes de FastAPI."""
 from datetime import timedelta
 from .. import models
-from ..core.errors import ApplicationError
-from ..infrastructure.security import (
+from .errors import ApplicationError
+from ..security.credentials import (
     get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 

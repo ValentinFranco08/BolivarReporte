@@ -1,9 +1,10 @@
 import math
 import json
 import pytest
-from app import models, schemas
+from app import models
+from app.controllers import schemas
 from app.dependencies import get_category_service
-from app.infrastructure.unit_of_work import UnitOfWork
+from app.dao.unit_of_work import UnitOfWork
 
 
 def test_vector_normalization_and_update(db):

@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form
-from .. import schemas, auth
+from . import schemas, auth
 from ..dependencies import get_remum_service
 
 router = APIRouter()

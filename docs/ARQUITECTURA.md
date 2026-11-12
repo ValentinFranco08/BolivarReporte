@@ -1,4 +1,4 @@
-# Arquitectura de Bolívar Animal: MVC y POO
+# Arquitectura de Bolívar Animal: MVC, Service, DAO y POO
 
 ## Empezar por tres recorridos
 
@@ -7,16 +7,16 @@ Para entender el proyecto, seguir estos archivos en orden:
 | Operación | Recorrido |
 |---|---|
 | Clasificar una foto | `controllers/reports.py:predict` → `ClassificationService.classify` → `LazyPredictor.predict` → `MultimodalPredictor.predict` |
-| Crear un reporte | `controllers/reports.py:create_report` → `ReportService.create` → repositorios → `UnitOfWork` |
+| Crear un reporte | `controllers/reports.py:create_report` → `ReportService.create` → DAO → `UnitOfWork` |
 | Entrenar | `ml/cli.py` → `training/train.py:run_training` → `Trainer.fit` → `Trainer.train_epoch` |
 
-La vista es Next.js. Los controladores reciben HTTP, los servicios aplican las reglas y los repositorios trabajan con SQLAlchemy. El modelo de aplicación (`Report`, `User`, `RemumRecord`) representa entidades; el modelo neuronal representa capas y operaciones sobre tensores.
+La vista es Next.js. Al publicar, la pantalla usa `useNuevoReporte` para gestionar el formulario. El hook llama a `publicarReporte`, que usa el cliente HTTP para analizar la foto, guardar el reporte y buscar coincidencias. Los controladores reciben HTTP, los servicios aplican las reglas y los DAO trabajan con SQLAlchemy. El modelo de aplicación (`Report`, `User`, `RemumRecord`) representa entidades; el modelo neuronal representa capas y operaciones sobre tensores.
 
 ```mermaid
 flowchart TD
     V[Vista Next.js] --> C[Controlador FastAPI]
     C --> S[Servicio: caso de uso]
-    S --> R[Repositorio]
+    S --> R[DAO]
     R --> D[(Base de datos)]
     S --> P[Predictor]
     P --> N[Red neuronal y checkpoint]
@@ -27,16 +27,20 @@ flowchart TD
 | Ubicación | Responsabilidad |
 |---|---|
 | `frontend/app/` y `frontend/components/` | Pantallas, formularios, filtros de presentación y estado de interacción |
+| `frontend/controllers/useNuevoReporte.ts` | Estado y acciones del formulario de nuevo reporte |
+| `frontend/services/publicarReporte.ts` | Analizar la foto, publicar el reporte y consultar coincidencias |
+| `frontend/models/reports.ts` | Tipos de reportes y de coincidencias |
 | `frontend/lib/api.ts` | Llamadas HTTP al backend |
 | `backend/app/controllers/` | Recibir solicitudes y devolver respuestas |
 | `backend/app/services/` | Ejecutar casos de uso y decisiones de negocio |
-| `backend/app/repositories/` | Consultar, insertar y actualizar entidades |
-| `backend/app/models.py` | Entidades ORM y enumeraciones |
-| `backend/app/schemas.py` | Contratos Pydantic de entrada y salida |
-| `backend/app/auth.py` | Obtener el usuario autenticado para una solicitud |
+| `backend/app/dao/` | Consultas, escritura, sesiones y transacciones de SQLAlchemy |
+| `backend/app/models/` | Entidades ORM y enumeraciones |
+| `backend/app/controllers/schemas.py` | Contratos Pydantic de entrada y salida |
+| `backend/app/controllers/auth.py` | Obtener el usuario autenticado para una solicitud |
 | `backend/app/dependencies.py` | Construir servicios y obtener el predictor/almacenamiento compartidos |
-| `backend/app/infrastructure/` | Archivos, transacciones, carga del modelo y funciones de contraseñas/JWT |
-| `backend/app/core/` | Configuración y errores de aplicación |
+| `backend/app/integrations/` | Almacenamiento de fotos y acceso al predictor neuronal |
+| `backend/app/security/credentials.py` | Hash de contraseñas y tokens JWT |
+| `backend/app/config/settings.py` y `services/errors.py` | Configuración y errores de casos de uso |
 | `backend/app/main.py` | Configuración HTTP, ciclo de vida y registro de controladores |
 | `ml/models/` | Capas y método `forward()` de los modelos |
 | `ml/data/` y `ml/preprocessing/` | Dataset, validación, imágenes y texto |
@@ -44,18 +48,20 @@ flowchart TD
 | `ml/evaluation/` | Métricas y matriz de confusión |
 | `ml/inference/` | Predicción, sugerencias y checkpoints |
 | `ml/configs/` y `ml/taxonomy.py` | Parámetros de entrenamiento y seis etiquetas activas |
+| `ml/datasets/` | Ejemplos etiquetados que consume el entrenamiento |
+| `ml/scripts/collection/` | Herramientas manuales para recolectar y preparar el dataset |
 
-## Ejemplo principal: crear un reporte
+## Publicación de un reporte
 
 `ReportService.create()` muestra tres pasos:
 
 1. Completar el embedding y pedir a `CategoryService.resolve_for_report()` la categoría definitiva.
-2. Vincular el usuario y guardar un `Report` mediante `ReportRepository`.
-3. Guardar la predicción y el feedback correspondiente mediante sus repositorios.
+2. Vincular el usuario y guardar un `Report` mediante `ReportDAO`.
+3. Guardar la predicción y el feedback correspondiente mediante sus DAO.
 
-Los tres pasos están dentro de `with self.unit_of_work`. Los repositorios hacen `flush()` para obtener IDs, pero no confirman la operación. `UnitOfWork` confirma al finalizar y revierte las escrituras si algo falla. Una categoría nueva cuenta su primera muestra una sola vez.
+Los tres pasos están dentro de `with self.unit_of_work`. Los DAO hacen `flush()` para obtener IDs, pero no confirman la operación. `UnitOfWork` confirma al finalizar y revierte las escrituras si algo falla. Una categoría nueva cuenta su primera muestra una sola vez.
 
-`FeedbackRepository.upsert()` inserta o actualiza la devolución de una predicción. `FeedbackService` decide cuándo la devolución es válida y `ReportService` decide si hubo una corrección; el repositorio solo persiste los campos recibidos.
+`FeedbackDAO.upsert()` inserta o actualiza la devolución de una predicción. `FeedbackService` decide cuándo la devolución es válida y `ReportService` decide si hubo una corrección; el DAO persiste los campos recibidos.
 
 Los métodos públicos de reportes son `create`, `get`, `list`, `update`, `resolve` y `active_alerts`. Los detalles internos, como `_record_prediction()`, se mantienen dentro del servicio.
 
@@ -63,21 +69,21 @@ Los métodos públicos de reportes son `create`, `get`, `list`, `update`, `resol
 
 `CategoryService.approve()` y `merge()` son los casos de uso transaccionales de administración. `resolve_for_report()`, `create_or_get()` y `update_centroid()` participan de la transacción del reporte; no hacen una confirmación independiente.
 
-`MatchingService` consulta candidatos mediante `ReportRepository` y los puntúa con `MatchingPolicy`. Los cálculos puros están en `services/similarity.py`.
+`MatchingService` consulta candidatos mediante `ReportDAO` y los puntúa con `MatchingPolicy`. Los cálculos puros están en `services/similarity.py`.
 
 `RemumService` registra mascotas, salud, padrinos y alertas. Los permisos de una alerta se comprueban antes de escribir. Las imágenes se eliminan si falla el registro que las iba a utilizar.
 
-`AuthService` realiza registro y login. Las funciones de hashing y JWT están en `infrastructure/security.py`; `auth.py` resuelve la autenticación de una solicitud HTTP.
+`AuthService` realiza registro y login. Las funciones de hashing y JWT están en `security/credentials.py`. `controllers/auth.py` resuelve la autenticación de una solicitud HTTP.
 
 ## Dónde está la POO
 
 | Principio | Ejemplo real | Qué permite |
 |---|---|---|
 | Encapsulamiento | `Trainer`, `LocalFileStorage`, `CheckpointLoader` | Reunir estado y operaciones relacionadas |
-| Composición | `ReportService` recibe repositorios, clasificación y una unidad de trabajo | Combinar colaboradores con funciones claras |
+| Composición | `ReportService` recibe DAO, clasificación y una unidad de trabajo | Combinar colaboradores con funciones claras |
 | Abstracción | Contratos `Predictor` y `FileStorage` | Definir capacidades sin exigir una implementación particular |
 | Polimorfismo | ViT, RoBERTa y multimodal aceptan entradas por nombre | Utilizar el mismo `Trainer` con los tres modelos |
-| Herencia | Los modelos heredan de `nn.Module`; los repositorios especializados de `Repository` | Reutilizar una base con una relación de tipos concreta |
+| Herencia | Los modelos heredan de `nn.Module`; los DAO especializados de `BaseDAO` | Reutilizar una base con una relación de tipos concreta |
 
 Los controladores pueden ser funciones `APIRouter`. Los cálculos matemáticos pueden ser funciones puras. La POO se aplica a responsabilidades con estado o comportamiento relacionado.
 
@@ -89,8 +95,8 @@ classDiagram
         +update(report_id, update)
         +resolve(report_id)
     }
-    class ReportRepository
-    class FeedbackRepository {
+    class ReportDAO
+    class FeedbackDAO {
         +upsert(prediction_id, correct, correct_class, reviewer_id)
     }
     class CategoryService {
@@ -105,8 +111,8 @@ classDiagram
         +__enter__()
         +__exit__()
     }
-    ReportService --> ReportRepository
-    ReportService --> FeedbackRepository
+    ReportService --> ReportDAO
+    ReportService --> FeedbackDAO
     ReportService --> CategoryService
     ReportService --> ClassificationService
     ReportService --> UnitOfWork
@@ -185,12 +191,12 @@ La migración de reconciliación `d6e9f03a2710` es aditiva y su downgrade exige 
 
 | Archivo o grupo | Estado y motivo |
 |---|---|
-| `backend/app/crud.py`, `ai_service.py`, `llm_categorizer.py` | Retirados tras migrar scripts y pruebas a servicios, repositorios y ML |
+| `backend/app/crud.py`, `ai_service.py`, `llm_categorizer.py` | Retirados tras migrar scripts y pruebas a servicios, DAO y ML |
 | `backend/scripts/seed.py` | Conservado para escenarios demo con imágenes y descargas; usa las dependencias actuales |
 | `backend/scripts/seed_centroids.py` | Conservado como herramienta manual de centroides, incluido su modo determinista de prueba |
 | `backend/scripts/update_coords.py` | Conservado para mantenimiento puntual de coordenadas |
 | `backend/scripts/sync_db.py` | Conservado para transferencia manual histórica; no forma parte de `dev.sh` ni del arranque |
-| `ml/datasets/collect_*`, `complete_*` y otras utilidades de recolección | Conservadas por sus tareas específicas; fuera del runtime y del entrenamiento principal |
+| `ml/scripts/collection/collect_*`, `complete_*` y otras utilidades de recolección | Conservadas por sus tareas específicas; fuera del runtime y del entrenamiento principal |
 | `ml/datasets/multimodal_dataset.py` | Retirado al no tener consumidores; la implementación única del dataset está en `ml/data/dataset.py` |
 
 ## Verificación

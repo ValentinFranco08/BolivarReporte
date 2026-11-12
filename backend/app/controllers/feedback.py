@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from .. import schemas, auth
+from . import schemas, auth
 from ..dependencies import get_feedback_service
 
 router = APIRouter()

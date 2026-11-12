@@ -15,11 +15,11 @@ def main():
     parser.add_argument("--checkpoint", default=str(ROOT / "ml/checkpoints/multimodal/best_multimodal_finetuned.pt"))
     parser.add_argument("--output", default=str(ROOT / "ml/checkpoints/multimodal/best_incremental.pt"))
     args = parser.parse_args()
-    from app.database import SessionLocal
+    from app.dao.database import SessionLocal
     from app.dependencies import get_feedback_service
-    from app.core.config import settings
-    from app.infrastructure.unit_of_work import UnitOfWork
-    from app.repositories.feedback import FeedbackRepository
+    from app.config.settings import settings
+    from app.dao.unit_of_work import UnitOfWork
+    from app.dao.feedback import FeedbackDAO
     from ml.training.incremental import IncrementalTrainer
     with SessionLocal() as session:
         samples = get_feedback_service(session).training_samples(settings.uploads_dir, pending_only=True)
@@ -34,7 +34,7 @@ def main():
                                           epochs=args.epochs, dry_run=args.dry_run)
         if result["saved"]:
             with UnitOfWork(session):
-                FeedbackRepository(session).mark_retrained(result["feedback_ids"])
+                FeedbackDAO(session).mark_retrained(result["feedback_ids"])
         print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":

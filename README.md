@@ -115,15 +115,15 @@ El modelo clasifica automáticamente los casos en las situaciones prioritarias p
 
 ```text
 backend/app/
-├── main.py                  # Composición y ciclo de vida HTTP
-├── controllers/             # Rutas y contratos HTTP
-├── services/                # Casos de uso y políticas de negocio
-├── repositories/            # Persistencia SQLAlchemy
-├── infrastructure/          # Archivos, unidad de trabajo y carga diferida
-├── core/                    # Configuración y errores
-├── dependencies.py          # Inyección de dependencias
-├── models.py                # Entidades ORM
-└── schemas.py               # Contratos Pydantic
+├── main.py                   # Arranque y ciclo de vida HTTP
+├── dependencies.py           # Construcción de los objetos
+├── controllers/              # Rutas, esquemas Pydantic y autenticación HTTP
+├── models/                   # Entidades SQLAlchemy y enumeraciones
+├── services/                 # Casos de uso, reglas y errores
+├── dao/                      # Consultas, sesiones y transacciones
+├── integrations/             # Predictor de ML y almacenamiento de fotos
+├── security/                 # Contraseñas y tokens JWT
+└── config/                   # Configuración de la aplicación
 ml/
 ├── models/                  # Encoders, fusión, multimodal y baselines
 ├── data/                    # Dataset, validación y preparación
@@ -131,9 +131,14 @@ ml/
 ├── training/                # Preparación, Trainer e incremental
 ├── evaluation/              # Evaluator y métricas
 ├── inference/               # Predictor y checkpoints
+├── scripts/collection/       # Herramientas manuales de recolección
 ├── configs/                 # Configuración de experimentos
 └── cli.py                   # Entrada común de ML
-frontend/                    # Vistas Next.js
+frontend/                    # Vistas Next.js en app/ y components/
+├── controllers/             # Hooks de los flujos de pantalla
+├── models/                  # Tipos de datos de reportes
+├── services/                # Publicación de reportes
+└── lib/                     # Cliente HTTP y utilidades
 backend/scripts/             # Migraciones, seed, exportación y reentrenamiento
 backend/tests/               # Pruebas de API, servicios y migraciones
 ml/tests/                    # Pruebas del pipeline neuronal

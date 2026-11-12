@@ -1,149 +1,24 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  ErrorAPI,
-  analizar,
-  crearReporte,
-  direccionDesdeCoords,
-  leerToken,
-  obtenerMatchesMascota,
-  type Reporte,
-  type TipoReporteAnimal,
-  type TipoMascota,
-  type EstadoSaludMascota,
-  type PetMatchCandidate,
-} from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
+import { useNuevoReporte } from '@/controllers/useNuevoReporte';
+import type { TipoReporteAnimal, TipoMascota } from '@/models/reports';
 import { VisualMatchModal } from '@/components/pets/VisualMatchModal';
 import { Icono } from '@/components/ui/Icono';
 
 function FormularioNuevoReporte() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const tipoInicial = (searchParams.get('tipo') as TipoReporteAnimal) || 'perdido';
-
-  // Estados del reporte
-  const [tipoReporte, setTipoReporte] = useState<TipoReporteAnimal>(tipoInicial);
-  const [tipoMascota, setTipoMascota] = useState<TipoMascota>('perro');
-  const [nombreMascota, setNombreMascota] = useState('');
-  const [raza, setRaza] = useState('');
-  const [color, setColor] = useState('');
-  const [estadoSalud] = useState<EstadoSaludMascota>('sano');
-  const [contactoNombre, setContactoNombre] = useState('');
-  const [contactoTelefono, setContactoTelefono] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-
-  // Foto y Geolocalización
-  const [archivo, setArchivo] = useState<File | null>(null);
-  const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
-  const [lat, setLat] = useState<number | null>(-36.2333);
-  const [lng, setLng] = useState<number | null>(-61.1167);
-  const [direccion, setDireccion] = useState<string | null>('San Carlos de Bolívar');
-  const [gpsBuscando, setGpsBuscando] = useState(false);
-
-  // Estados de proceso
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [reporteCreado, setReporteCreado] = useState<Reporte | null>(null);
-  const [matchesEncontrados, setMatchesEncontrados] = useState<PetMatchCandidate[]>([]);
-  const [mostrarModalMatches, setMostrarModalMatches] = useState(false);
-
-  // Solicitar GPS
-  const pedirGps = () => {
-    if (!navigator.geolocation) return;
-    setGpsBuscando(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const latitude = pos.coords.latitude;
-        const longitude = pos.coords.longitude;
-        setLat(latitude);
-        setLng(longitude);
-        setGpsBuscando(false);
-        try {
-          const dir = await direccionDesdeCoords(latitude, longitude);
-          if (dir) setDireccion(dir);
-        } catch {}
-      },
-      () => {
-        setGpsBuscando(false);
-      },
-      { timeout: 8000 }
-    );
-  };
-
-  const handleArchivoSeleccionado = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setArchivo(file);
-      setVistaPrevia(URL.createObjectURL(file));
-    }
-  };
-
-  const enviar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!archivo) {
-      setError('Por favor, adjuntá una foto para ayudar a identificar a la mascota.');
-      return;
-    }
-
-    const token = leerToken();
-
-    setEnviando(true);
-    setError(null);
-
-    try {
-      // 1. Análisis visual preliminar
-      let analizado = null;
-      try {
-        analizado = await analizar(archivo, descripcion || 'Animal');
-      } catch (err) {
-        console.warn('Inferencia visual preliminar no disponible, continuando:', err);
-      }
-
-      // 2. Crear reporte en backend
-      const nuevo = await crearReporte(token, {
-        description: descripcion || 'Reporte comunitario en Bolívar',
-        image_path: analizado?.image_path || '',
-        predicted_class: analizado?.predictions?.[0]?.label || 'mascota',
-        confidence: analizado?.predictions?.[0]?.score || 0.9,
-        corrected_class: null,
-        latitude: lat,
-        longitude: lng,
-        address: direccion,
-        report_type: tipoReporte,
-        pet_type: tipoMascota,
-        pet_name: nombreMascota || undefined,
-        pet_breed: raza || undefined,
-        color_description: color || undefined,
-        health_status: estadoSalud,
-        contact_name: contactoNombre || undefined,
-        contact_phone: contactoTelefono || undefined,
-      });
-
-      setReporteCreado(nuevo);
-
-      // 3. Buscar coincidencias con IA
-      try {
-        const matchesData = await obtenerMatchesMascota(nuevo.id);
-        if (matchesData && matchesData.matches && matchesData.matches.length > 0) {
-          setMatchesEncontrados(matchesData.matches);
-          setMostrarModalMatches(true);
-        }
-      } catch (errMatch) {
-        console.warn('Error al buscar matches iniciales:', errMatch);
-      }
-    } catch (err) {
-      setError(
-        err instanceof ErrorAPI
-          ? err.message
-          : 'Ocurrió un error al guardar la publicación. Revisá los datos.'
-      );
-    } finally {
-      setEnviando(false);
-    }
-  };
+  const {
+    tipoReporte, setTipoReporte, tipoMascota, setTipoMascota, nombreMascota, setNombreMascota,
+    raza, setRaza, color, setColor, contactoNombre, setContactoNombre,
+    contactoTelefono, setContactoTelefono, descripcion, setDescripcion,
+    vistaPrevia, quitarFoto, direccion, setDireccion, gpsBuscando, pedirGps,
+    handleArchivoSeleccionado, enviar, enviando, error, reporteCreado,
+    matchesEncontrados, mostrarModalMatches, setMostrarModalMatches,
+  } = useNuevoReporte(tipoInicial);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
@@ -271,10 +146,7 @@ function FormularioNuevoReporte() {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    setArchivo(null);
-                    setVistaPrevia(null);
-                  }}
+                  onClick={quitarFoto}
                   className="absolute top-3 right-3 rounded-xl bg-white/90 backdrop-blur-xs px-3 py-1 text-xs font-bold text-corteza shadow-sm hover:bg-white"
                 >
                   Cambiar foto

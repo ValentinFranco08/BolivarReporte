@@ -15,16 +15,15 @@ Consultar `docs/ARQUITECTURA.md` para diagramas UML y comandos.
 
 ```text
 backend/app/
-├── main.py             # Configuración HTTP y ciclo de vida
-├── controllers/        # APIRouter: transporte HTTP
-├── services/           # Casos de uso y políticas de negocio
-├── repositories/       # Consultas e inserciones; flush, sin commit
-├── infrastructure/     # FileStorage, LazyPredictor y UnitOfWork
-├── core/               # Configuración y errores
-├── dependencies.py     # Composición de objetos
-├── models.py           # Entidades SQLAlchemy
-├── schemas.py          # Contratos Pydantic
-└── auth.py             # Dependencias HTTP de autenticación
+├── main.py                   # Arranque y ciclo de vida HTTP
+├── dependencies.py           # Construcción de los objetos
+├── controllers/              # Rutas, esquemas Pydantic y autenticación HTTP
+├── models/                   # Entidades SQLAlchemy y enumeraciones
+├── services/                 # Casos de uso, reglas y errores
+├── dao/                      # Consultas, sesiones y transacciones
+├── integrations/             # Predictor de ML y almacenamiento de fotos
+├── security/                 # Contraseñas y tokens JWT
+└── config/                   # Configuración de la aplicación
 ml/
 ├── models/             # Encoders, fusión, clasificador y baselines
 ├── data/               # Dataset, validación y preparación
@@ -32,13 +31,14 @@ ml/
 ├── training/           # train.py, trainer.py e incremental.py
 ├── evaluation/         # Evaluator y métricas
 ├── inference/          # Predictor, checkpoints y sugerencias
+├── scripts/collection/       # Herramientas manuales de recolección
 ├── configs/            # Experimentos JSON
 └── cli.py              # Comandos de ML
 frontend/               # Vista Next.js
 backend/scripts/        # Mantenimiento explícito y puente de feedback
 ```
 
-Las fachadas históricas `crud.py`, `ai_service.py` y `llm_categorizer.py` fueron retiradas tras migrar sus consumidores. Usar servicios, repositorios o `ml.inference.category_suggester` directamente. `dependencies.get_predictor()` y `get_storage()` son los proveedores compartidos. Las funciones de contraseñas y JWT están en `infrastructure/security.py`; `auth.py` contiene las dependencias HTTP.
+Las fachadas históricas `crud.py`, `ai_service.py` y `llm_categorizer.py` fueron retiradas tras migrar sus consumidores. Usar servicios, DAO o `ml.inference.category_suggester` directamente. `dependencies.get_predictor()` y `get_storage()` son los proveedores compartidos. Las funciones de contraseñas y JWT están en `security/credentials.py`. `controllers/auth.py` contiene las dependencias HTTP.
 
 Los servicios coordinan transacciones con `UnitOfWork`. Los controladores no consultan la base ni ejecutan lógica neuronal. ML no debe importar FastAPI, SQLAlchemy ni módulos del backend. Los tres modelos comparten una interfaz de entradas por nombre y se entrenan directamente con `Trainer`, sin adaptadores ni fábricas adicionales.
 
@@ -63,7 +63,7 @@ Las migraciones y datos iniciales se ejecutan con `backend/scripts/manage.py mig
 4. **Dependencias de Autenticación:**  
    - Usar `bcrypt==3.2.2` con `passlib[bcrypt]` para evitar incompatibilidades de longitud de hash.
 5. **Esquemas y Tipos Pydantic:**  
-   - Todos los esquemas de API deben residir en `backend/app/schemas.py`.
+   - Todos los esquemas de API deben residir en `backend/app/controllers/schemas.py`.
 6. **Taxonomía y legalidad:**
    - `ml/taxonomy.py` es la fuente de verdad de las 6 etiquetas activas, áreas y prioridad.
    - La IA clasifica situaciones; nunca declara una infracción legal. La aplicación debe conservar el disclaimer y enviar casos de confianza menor a `0.55` a revisión humana.

@@ -4,10 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.database import Base, get_db
+from app.dao.database import Base, get_db
 from app.main import app
 from app.dependencies import get_storage
-from app.infrastructure.storage import LocalFileStorage
+from app.integrations.storage import LocalFileStorage
 
 # Base de datos en memoria para tests
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"

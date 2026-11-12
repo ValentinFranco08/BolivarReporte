@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from ..core.errors import ApplicationError, NotFoundError
+from .errors import ApplicationError, NotFoundError
 from ..models import Category
 
 def combine_centroids(first, first_count, second, second_count=1):

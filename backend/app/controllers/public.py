@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from .. import schemas
+from . import schemas
 from ..dependencies import get_predictor, get_category_service
 
 router = APIRouter()

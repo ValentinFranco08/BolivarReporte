@@ -3,7 +3,8 @@
 import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Circle } from 'react-leaflet';
 import L from 'leaflet';
-import { urlDeImagen, type Reporte } from '@/lib/api';
+import { urlDeImagen } from '@/lib/api';
+import type { Reporte } from '@/models/reports';
 
 /** Centro de San Carlos de Bolívar. */
 const CENTRO_BOLIVAR: [number, number] = [-36.2312, -61.1136];

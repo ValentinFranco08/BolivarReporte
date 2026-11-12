@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { listarReportes, Reporte } from '@/lib/api';
+import { listarReportes } from '@/lib/api';
+import type { Reporte } from '@/models/reports';
 import { PetCard } from '@/components/pets/PetCard';
 import { VisualMatchModal } from '@/components/pets/VisualMatchModal';
 import { Icono } from '@/components/ui/Icono';

@@ -2,17 +2,17 @@
 from functools import lru_cache
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from .database import get_db
-from .core.config import settings
-from .infrastructure.storage import LocalFileStorage
-from .infrastructure.unit_of_work import UnitOfWork
-from .infrastructure.predictor import LazyPredictor
-from .repositories.users import UserRepository
-from .repositories.reports import ReportRepository
-from .repositories.categories import CategoryRepository
-from .repositories.predictions import PredictionRepository
-from .repositories.feedback import FeedbackRepository
-from .repositories.remum import RemumRepository
+from .dao.database import get_db
+from .config.settings import settings
+from .integrations.storage import LocalFileStorage
+from .dao.unit_of_work import UnitOfWork
+from .integrations.ml_predictor import LazyPredictor
+from .dao.users import UserDAO
+from .dao.reports import ReportDAO
+from .dao.categories import CategoryDAO
+from .dao.predictions import PredictionDAO
+from .dao.feedback import FeedbackDAO
+from .dao.remum import RemumDAO
 from .services.categories import CategoryService
 from .services.classification import ClassificationService
 from .services.reports import ReportService
@@ -35,41 +35,41 @@ def get_storage():
 
 def get_category_service(db: Session = Depends(get_db)):
     return CategoryService(
-        categories=CategoryRepository(db), reports=ReportRepository(db), unit_of_work=UnitOfWork(db),
+        categories=CategoryDAO(db), reports=ReportDAO(db), unit_of_work=UnitOfWork(db),
     )
 
 
 def get_classification_service(db: Session = Depends(get_db),
                                model=Depends(get_predictor), files=Depends(get_storage)):
-    return ClassificationService(predictor=model, categories=CategoryRepository(db), storage=files)
+    return ClassificationService(predictor=model, categories=CategoryDAO(db), storage=files)
 
 
 def get_report_service(db: Session = Depends(get_db),
                        model=Depends(get_predictor), files=Depends(get_storage)):
     # Los repositorios comparten la misma sesión y la confirmación ocurre en el servicio.
     return ReportService(
-        reports=ReportRepository(db), categories=get_category_service(db), users=UserRepository(db),
-        predictions=PredictionRepository(db), feedback=FeedbackRepository(db),
+        reports=ReportDAO(db), categories=get_category_service(db), users=UserDAO(db),
+        predictions=PredictionDAO(db), feedback=FeedbackDAO(db),
         classification=get_classification_service(db, model, files), unit_of_work=UnitOfWork(db),
     )
 
 
 def get_feedback_service(db: Session = Depends(get_db)):
     return FeedbackService(
-        feedback=FeedbackRepository(db), predictions=PredictionRepository(db), unit_of_work=UnitOfWork(db),
+        feedback=FeedbackDAO(db), predictions=PredictionDAO(db), unit_of_work=UnitOfWork(db),
     )
 
 
 def get_auth_service(db: Session = Depends(get_db)):
-    return AuthService(users=UserRepository(db), unit_of_work=UnitOfWork(db))
+    return AuthService(users=UserDAO(db), unit_of_work=UnitOfWork(db))
 
 
 def get_matching_service(db: Session = Depends(get_db)):
-    return MatchingService(reports=ReportRepository(db))
+    return MatchingService(reports=ReportDAO(db))
 
 
 def get_remum_service(db: Session = Depends(get_db), files=Depends(get_storage)):
     return RemumService(
-        records=RemumRepository(db), reports=ReportRepository(db), users=UserRepository(db),
+        records=RemumDAO(db), reports=ReportDAO(db), users=UserDAO(db),
         storage=files, unit_of_work=UnitOfWork(db),
     )

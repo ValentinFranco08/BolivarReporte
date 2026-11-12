@@ -8,9 +8,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
 
 def export_retraining_dataset(output_file: str):
-    from app.database import SessionLocal
+    from app.dao.database import SessionLocal
     from app.dependencies import get_feedback_service
-    from app.core.config import settings
+    from app.config.settings import settings
     with SessionLocal() as session:
         samples = get_feedback_service(session).training_samples(settings.uploads_dir)
     Path(output_file).write_text(json.dumps(samples, indent=2, ensure_ascii=False))

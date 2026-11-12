@@ -7,13 +7,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, MagicMock
 import pytest
-from app import models, schemas
-from app.core.errors import PermissionDeniedError, ApplicationError
+from app import models
+from app.controllers import schemas
+from app.services.errors import PermissionDeniedError, ApplicationError
 from app.dependencies import (get_report_service, get_category_service, get_classification_service,
                               get_feedback_service, get_remum_service, get_predictor, get_storage)
-from app.infrastructure.storage import LocalFileStorage
-from app.infrastructure.unit_of_work import UnitOfWork
-from app.repositories.reports import ReportRepository
+from app.integrations.storage import LocalFileStorage
+from app.dao.unit_of_work import UnitOfWork
+from app.dao.reports import ReportDAO
 from app.services.reports import ReportService
 from app.services.classification import ClassificationService
 from app.main import app
@@ -80,7 +81,7 @@ def test_merge_by_name_reassigns_reports(db):
     service = get_category_service(db)
     source = service.create_or_get("origen", "Animales")
     target = service.create_or_get("destino", "Animales")
-    report = ReportRepository(db).add(models.Report(image_path="/uploads/test.jpg", category_id=source.id))
+    report = ReportDAO(db).add(models.Report(image_path="/uploads/test.jpg", category_id=source.id))
     result = service.merge(schemas.CategoryMergeRequest(
         source_category_id=source.id, target_category_name=target.name,
     ))
@@ -186,7 +187,7 @@ def test_category_merge_rolls_back_reassigned_reports_and_centroids(db, monkeypa
     service = get_category_service(db)
     source = service.create_or_get("merge_source", "Animales", embedding=[1, 0, 0])
     target = service.create_or_get("merge_target", "Animales", embedding=[0, 1, 0])
-    report = ReportRepository(db).add(models.Report(image_path="/uploads/pet.jpg", category_id=source.id))
+    report = ReportDAO(db).add(models.Report(image_path="/uploads/pet.jpg", category_id=source.id))
     db.commit()
     original_centroid = target.embedding_centroid
     reassign = service.reports.reassign_category
@@ -226,8 +227,8 @@ def test_repeated_feedback_updates_one_record(db, tmp_path):
 def test_lifespan_and_http_routes_share_the_injected_predictor(db, tmp_path):
     from fastapi.testclient import TestClient
     from app.main import create_app
-    from app.database import get_db
-    from app.infrastructure.predictor import LazyPredictor
+    from app.dao.database import get_db
+    from app.integrations.ml_predictor import LazyPredictor
 
     factory = Mock(return_value=FakePredictor())
     model = LazyPredictor(factory=factory)

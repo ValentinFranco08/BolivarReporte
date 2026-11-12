@@ -1,7 +1,7 @@
 """Operaciones explícitas de datos, fuera del arranque HTTP."""
 import json
 from .. import models
-from ..infrastructure.security import get_password_hash
+from ..security.credentials import get_password_hash
 from ml.taxonomy import SEED_CATEGORIES
 
 class BootstrapService:

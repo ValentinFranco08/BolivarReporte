@@ -28,7 +28,7 @@ def test_migrate_and_seed_empty_database_are_repeatable(tmp_path):
 
 def test_adopting_legacy_schema_preserves_data(tmp_path):
     from sqlalchemy import create_engine
-    from app.database import Base
+    from app.dao.database import Base
     database = tmp_path / "legacy.db"
     engine = create_engine(f"sqlite:///{database}")
     Base.metadata.create_all(engine)

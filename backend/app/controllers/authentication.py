@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from .. import schemas, auth
+from . import schemas, auth
 from ..dependencies import get_auth_service
 
 router = APIRouter()

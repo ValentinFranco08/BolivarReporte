@@ -12,7 +12,7 @@ web
 
 **Secundario: personal municipal (rol `admin`).** Trabaja en escritorio, revisa el flujo entrante, prioriza, cambia estados y corrige la clasificación cuando la IA se equivocó. Su trabajo es triage: convertir un caudal desordenado de reportes en una cola de trabajo accionable.
 
-Los dos roles ya existen en el modelo de datos (`UserRole.CITIZEN` / `UserRole.ADMIN`, `backend/app/models.py:8-10`).
+Los dos roles ya existen en el modelo de datos (`UserRole.CITIZEN` / `UserRole.ADMIN`, `backend/app/models/enums.py:4-6`).
 
 ## Product Purpose
 
@@ -36,9 +36,9 @@ Una red neuronal multimodal (ViT + RoBERTa + Cross-Attention) analiza **imagen y
 
 **Flujo municipal:** panel con la cola de reportes → filtra por área, estado, prioridad, texto → abre un reporte → cambia estado y prioridad → si la clasificación está mal, la corrige (y esa corrección queda como par imagen+etiqueta exportable para reentrenar el modelo).
 
-**Ciclo de vida (8 estados, `backend/app/models.py:12-20`):** `reportado`, `clasificado`, `pendiente`, `en_proceso`, `resuelto`, `rechazado`, `duplicado`, `requiere_informacion`. El README documenta solo el camino feliz de 5; los otros 3 existen y el panel los usa.
+**Ciclo de vida (8 estados, `backend/app/models/enums.py:9-17`):** `reportado`, `clasificado`, `pendiente`, `en_proceso`, `resuelto`, `rechazado`, `duplicado`, `requiere_informacion`. El README documenta solo el camino feliz de 5; los otros 3 existen y el panel los usa.
 
-**Prioridades (4, `models.py:22-26`):** `baja`, `media`, `alta`, `critica`. La taxonomía sugiere solo baja/media/alta; `critica` es exclusivamente manual.
+**Prioridades (4, `backend/app/models/enums.py:20-24`):** `baja`, `media`, `alta`, `critica`. La taxonomía sugiere solo baja/media/alta; `critica` es exclusivamente manual.
 
 **Escena física:** calle, luz de día directa o noche, teléfono en la mano. Contraste y tamaño de objetivo táctil no son detalles estéticos acá, son condiciones de uso.
 

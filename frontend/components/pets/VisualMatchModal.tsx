@@ -1,13 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {
-  Reporte,
-  PetMatchCandidate,
-  obtenerMatchesMascota,
-  resolverReporte,
-  urlDeImagen,
-} from '@/lib/api';
+import { obtenerMatchesMascota, resolverReporte, urlDeImagen } from '@/lib/api';
+import type { Reporte, PetMatchCandidate } from '@/models/reports';
 import { Icono } from '@/components/ui/Icono';
 
 interface VisualMatchModalProps {

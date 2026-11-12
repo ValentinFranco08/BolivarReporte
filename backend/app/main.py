@@ -12,8 +12,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from .core.config import settings
-from .core.errors import ApplicationError
+from .config.settings import settings
+from .services.errors import ApplicationError
 from .controllers import public, authentication, reports, feedback, categories, remum
 from .dependencies import get_predictor, get_storage
 

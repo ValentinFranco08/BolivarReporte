@@ -1,8 +1,8 @@
 import json
 import logging
 from ml.inference.contracts import Predictor
-from ..infrastructure.storage import FileStorage
-from ..core.errors import ApplicationError, ServiceUnavailableError
+from ..integrations.storage import FileStorage
+from .errors import ApplicationError, ServiceUnavailableError
 
 logger = logging.getLogger(__name__)
 
