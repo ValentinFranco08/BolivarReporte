@@ -5,7 +5,7 @@
 > Ecosistema integral de bienestar animal impulsado por una red neuronal multimodal propia (Visión por Computadora + Procesamiento de Lenguaje Natural en Español) para el reencuentro de mascotas, censo municipal con chapitas QR y prevención comunitaria de envenenamientos.
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![PyTorch](https://img.shields.io/badge/Deep%20Learning-PyTorch%20%2F%20Transformers-EE4C2C?style=flat&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
@@ -13,7 +13,7 @@
 
 ## Arquitectura MVC y programación orientada a objetos
 
-El backend separa controladores FastAPI, servicios de negocio, repositorios SQLAlchemy e infraestructura. La vista es Next.js. ML cuenta con un `Trainer` común para ViT, RoBERTa y multimodal, una interfaz común de modelos, preprocesamiento compartido y checkpoints con metadatos.
+Next.js implementa las vistas. En el backend, los controladores FastAPI reciben las solicitudes, los servicios aplican las reglas de negocio, los DAO consultan y guardan datos y los modelos SQLAlchemy representan las entidades. Las clases reciben sus dependencias desde `dependencies.py`. La integración con ML usa `LazyPredictor` para cargar los modelos y ejecutar inferencia dentro del proceso de Python.
 
 La [guía de arquitectura](docs/ARQUITECTURA.md) explica las clases, principios de POO, diagramas UML, transacciones, comandos de mantenimiento y verificación. Para empezar, seguí los tres recorridos de lectura al inicio de esa guía: clasificar, crear un reporte y entrenar. `main.py` solo ensambla la aplicación; las migraciones, semillas y reindexación son comandos explícitos.
 
@@ -25,9 +25,9 @@ Hoy en día, cuando una mascota se pierde o se rescata a un animal en la vía p�
 
 **Bolívar Animal** unifica la respuesta municipal y ciudadana en una sola plataforma inteligente articulada en cuatro pilares:
 
-1. **Reencuentro Inteligente de Mascotas (Matching Bi-Modal con IA):**
-   * Cruce automático en tiempo real entre avisos de animales **perdidos (`lost`)** y **encontrados (`found`)**.
-   * Algoritmo híbrido que combina la similitud visual del animal (aislando el fondo mediante *Auto-Crop*), la descripción semántica en lenguaje natural (raza, tamaño, colores, marcas) y la proximidad geográfica mediante geolocalización.
+1. **Reencuentro de mascotas**
+   * Cotejo visual entre avisos de pérdida, hallazgo y tránsito, con comparación de fotos lado a lado.
+   * El piloto de DINOv2 para perros admite avisos con una o varias fotos y puede cotejarlos sin nombre, raza ni color declarado.
 2. **REMUM (Registro Municipal de Mascotas):**
    * Padrón digital de animales con dueño y animales comunitarios del partido de Bolívar.
    * Emisión de credenciales oficiales y generación automática de **códigos QR físicos** para imprimir y colocar en la chapita del collar, permitiendo que cualquier vecino que lo encuentre escanee el código y contacte al tutor al instante.
@@ -40,9 +40,9 @@ Hoy en día, cuando una mascota se pierde o se rescata a un animal en la vía p�
 
 ## 🧠 Arquitectura de la Inteligencia Artificial
 
-[Entrenamiento y evaluación del cotejo visual por identidad](docs/COTEJO_VISUAL.md).
+### Clasificación de avisos con ViT y RoBERTa
 
-Para que un vecino de a pie no tenga que completar formularios técnicos complejos, la plataforma cuenta con un modelo multimodal unificado propio (**`BolivarMultimodalModel`**, ~218,6 Millones de parámetros) entrenado para interpretar conjuntamente **la foto del animal y la descripción en español**:
+`BolivarMultimodalModel` interpreta la foto del animal y la descripción en español para sugerir una categoría. La persona puede corregirla antes de publicar.
 
 ```text
      FOTO DEL ANIMAL (Cámara / Galería)              DESCRIPCIÓN (Lenguaje natural)
@@ -65,24 +65,28 @@ Para que un vecino de a pie no tenga que completar formularios técnicos complej
                                             ▼
                              MLP Classifier Head (768→512→256→N)
                                             │
-                    ┌───────────────────────┴───────────────────────┐
-                    ▼                                               ▼
-         Diagnóstico & Prioridad                         Vector Embedding L2 (768d)
-        (Clasificación de situación)                   (Matching de similitud de mascotas)
+                                            ▼
+                                  Categoría del aviso
 ```
 
-### Componentes Técnicos de Deep Learning
 * **Rama Visual:** `google/vit-base-patch16-224` (12 bloques Transformer, 86,4M de parámetros).
 * **Rama Textual:** `bertin-project/bertin-roberta-base-spanish` (12 bloques Transformer, 124,6M de parámetros).
-* **Módulo de Fusión (Cross-Attention):** `CrossAttentionFusion` (8 cabezas de atención, proyección FFN a 3.072 neuronas, 7,1M de parámetros). El texto guía a la red hacia qué rasgo visual mirar (ej: *"manto negro con patas claras y collar rojo"*).
-* **Auto-Crop Multi-Escala:** Detección y recorte focalizado automático del animal para extraer embeddings limpios sin interferencia del fondo de la calle o patio.
-* **Score Híbrido de Coincidencia (Perdido vs Hallado):**
-  $$\text{Score Final} = w_{\text{vis}} \cdot \text{Sim}_{\text{Coseno}} + w_{\text{sem}} \cdot \text{Sim}_{\text{Semántica}} + w_{\text{geo}} \cdot \text{Factor}_{\text{Proximidad}}$$
-* **Aprendizaje Continuo (Active Learning Replay):** Entrenamiento en `ml/training/incremental.py` con *Experience Replay* que aprovecha las validaciones de Zoonosis para reajustar los pesos para reducir el riesgo de olvido catastrófico.
+* **Fusión.** `CrossAttentionFusion` usa 8 cabezas de atención. El texto consulta los tokens de la imagen.
+* **Entrenamiento.** Las capas se definen en [`ml/models/multimodal.py`](ml/models/multimodal.py) y los parámetros de entrenamiento en [`ml/configs/multimodal.json`](ml/configs/multimodal.json). El entrenamiento se inicia con `python -m ml.cli train --model multimodal`. Las correcciones pueden incorporarse en una corrida explícita de entrenamiento incremental.
 
-### Resultados en el Conjunto de Prueba (*Test Set*):
-* **Accuracy:** **96.67%** (58 aciertos sobre 60 casos de prueba independientes).
-* **Macro F1-Score:** **94.19%** (100% de efectividad en situaciones críticas: *animal herido, en riesgo y abandono*).
+El clasificador obtuvo **96,67 % de exactitud** (58/60) y **94,19 % de F1 macro** en su conjunto de prueba. [Resultados del clasificador](ml/checkpoints/multimodal/results.json)
+
+### Cotejo de perros con DINOv2 Small
+
+El piloto local usa `dinov2-v2-automatic.pt`. [`PetPredictor`](ml/inference/pet_predictor.py) recorta al perro cuando el detector identifica uno con suficiente puntaje y genera un vector de 128 componentes por foto. [`MatchingService`](backend/app/services/matching.py) obtiene los avisos elegibles del DAO y compara los vectores de la misma versión por similitud coseno. Si hay varias fotos, usa el par con mayor similitud. Un conflicto claro de pelaje declarado puede descartar un aviso.
+
+| Similitud visual en el piloto | Resultado en el comparador |
+|---|---|
+| Desde **72,1 %** aproximadamente | Posible coincidencia |
+| Desde **50 %** y por debajo del umbral del modelo | Hasta tres avisos para revisión manual |
+| Por debajo del **50 %** | Aviso fuera del comparador |
+
+La similitud es un puntaje entre fotos. La **meta de 80 % de precisión** se evalúa como la proporción de sugerencias que corresponden al mismo perro. La prueba local reservada sigue pendiente (BA-26 y BA-27). [Entrenamiento, evaluación y configuración del piloto](docs/COTEJO_VISUAL.md)
 
 ---
 
@@ -105,8 +109,8 @@ El modelo clasifica automáticamente los casos en las situaciones prioritarias p
 
 | Capa | Tecnologías |
 |---|---|
-| **Frontend** | **Next.js 15** (App Router, React 19, TypeScript), Sistema de Diseño "Rastro" (CSS Design Tokens con modo claro/oscuro), Leaflet & OpenStreetMap, Lucide Icons. |
-| **Backend** | **Python (FastAPI)**, Pydantic v2, SQLAlchemy (Async/Sync pooling), Uvicorn, Pillow. |
+| **Frontend** | **Next.js 16** (App Router, React 19, TypeScript), Tailwind CSS, Leaflet y OpenStreetMap. |
+| **Backend** | **Python (FastAPI)**, Pydantic v2, SQLAlchemy, Uvicorn y Pillow. |
 | **Base de Datos** | **PostgreSQL** (Docker) con fallback SQLite para entornos livianos. Migraciones explícitas con Alembic. |
 | **Deep Learning** | **PyTorch**, Hugging Face Transformers, Torchvision. Aceleración nativa en Apple Silicon (MPS), CUDA o CPU. |
 | **Seguridad & Auth** | JWT (OAuth2 Password Bearer), Hashing de contraseñas Bcrypt/Passlib, roles `citizen` y `admin`. |
@@ -132,7 +136,8 @@ ml/
 ├── preprocessing/           # Imagen y texto
 ├── training/                # Preparación, Trainer e incremental
 ├── evaluation/              # Evaluator y métricas
-├── inference/               # Predictor y checkpoints
+├── inference/               # Predicción multimodal y cotejo de perros
+├── checkpoints/             # Resultados y pesos locales
 ├── scripts/collection/       # Herramientas manuales de recolección
 ├── configs/                 # Configuración de experimentos
 └── cli.py                   # Entrada común de ML
@@ -154,7 +159,7 @@ El proyecto incluye el script maestro [`./dev.sh`](dev.sh), que levanta la base 
 
 ### 1. Requisitos Previos
 * **Python 3.11+** (con entorno virtual en `./venv`)
-* **Node.js 20+** y `npm`
+* **Node.js 20.9+** y `npm`
 * **Docker** (opcional pero recomendado para PostgreSQL local)
 
 ### 2. Configuración Inicial
@@ -184,6 +189,12 @@ El script iniciará automáticamente:
 * 🌐 **Frontend (Next.js):** [http://localhost:3000](http://localhost:3000)
 
 *(Para detener todos los servicios de forma limpia, presione `Ctrl + C` en la terminal).*
+
+### Modelos y datos de demostración
+
+En una instalación nueva, prepará los pesos del clasificador en `ml/checkpoints/multimodal/` o entrenalo con el comando de la sección de clasificación. Para habilitar DINOv2, prepará el checkpoint, el encoder y el detector según la [guía de cotejo](docs/COTEJO_VISUAL.md). Configurá `PET_REID_CHECKPOINT` en `backend/.env` y reindexá la base de desarrollo que vayas a usar. Los pesos `.pt`, la configuración local y la base SQLite se mantienen fuera de Git.
+
+Para la defensa, publicá un hallazgo con una foto y abrí **Coincidencias** desde la cartelera. Si usás la base local de la demo, abrí **Renato** y compará los hallazgos de **71,4 %** y **54,7 %**. [Pasos de la demostración](docs/COTEJO_VISUAL.md#demostración-del-cotejo-para-el-profesor)
 
 ---
 
