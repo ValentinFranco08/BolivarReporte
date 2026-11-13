@@ -37,3 +37,13 @@ class ClassificationService:
             return self.predictor.extract_pet_embedding(self.storage.read(image_path))
         except FileNotFoundError:
             return None
+
+    def identity_from_path(self, image_path):
+        if not image_path or getattr(self.predictor, "pet_reid_enabled", False) is not True:
+            return None
+        try:
+            image = self.storage.read(image_path)
+        except OSError:
+            logger.warning("No se pudo leer una foto para el cotejo visual")
+            return None
+        return self.predictor.pet_identity_embedding(image)

@@ -1,7 +1,8 @@
 """Crear, consultar y actualizar reportes; una transacción por operación completa."""
 import json
 from .. import models
-from .errors import NotFoundError
+from .errors import ApplicationError, NotFoundError
+from .matching import MatchingPolicy
 
 
 class ReportService:
@@ -23,6 +24,9 @@ class ReportService:
             if not data.embedding and data.image_path:
                 data.embedding = self.classification.embedding_from_path(data.image_path)
             data.category_id = self.categories.resolve_for_report(data)
+            match_embedding = data.embedding
+            if data.pet_type == models.PetType.PERRO and data.report_type in MatchingPolicy.SEARCHABLE_TYPES:
+                match_embedding = self.classification.identity_from_path(data.image_path) or match_embedding
 
             # 2. Vincular al usuario y persistir solamente los campos del reporte.
             user = current_user or self.users.default_citizen()
@@ -36,8 +40,19 @@ class ReportService:
                 contact_name=data.contact_name, contact_phone=data.contact_phone,
                 category_id=data.category_id, image_path=data.image_path, user_id=user_id,
                 is_novel_category=bool(data.is_novel_category),
-                embedding=json.dumps(data.embedding) if data.embedding else None,
+                embedding=json.dumps(match_embedding) if match_embedding else None,
             ))
+
+            for path in dict.fromkeys(data.additional_image_paths):
+                if path == data.image_path:
+                    continue
+                filename = path.removeprefix("/uploads/")
+                if not path.startswith("/uploads/") or "/" in filename or filename in {"", ".", ".."}:
+                    raise ApplicationError("Ruta de foto adicional inválida.")
+                vector = self.classification.identity_from_path(path) if isinstance(match_embedding, dict) else None
+                report.additional_photos.append(models.ReportPhoto(
+                    image_path=path, embedding=json.dumps(vector) if vector else None,
+                ))
 
             # 3. Vincular predicción y corrección antes de confirmar la transacción.
             self._record_prediction(report.id, data, user_id)

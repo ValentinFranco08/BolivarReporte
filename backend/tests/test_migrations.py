@@ -38,4 +38,4 @@ def test_adopting_legacy_schema_preserves_data(tmp_path):
     run_manage(database, "migrate", "--adopt-existing")
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT email FROM users").fetchone()[0] == "legacy@test.com"
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "d6e9f03a2710"
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "f26d90a115aa"

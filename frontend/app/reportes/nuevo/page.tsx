@@ -15,9 +15,9 @@ function FormularioNuevoReporte() {
     tipoReporte, setTipoReporte, tipoMascota, setTipoMascota, nombreMascota, setNombreMascota,
     raza, setRaza, color, setColor, contactoNombre, setContactoNombre,
     contactoTelefono, setContactoTelefono, descripcion, setDescripcion,
-    vistaPrevia, quitarFoto, direccion, setDireccion, gpsBuscando, pedirGps,
+    vistaPrevia, quitarFoto, fotosAdicionales, agregarFotos, quitarFotoAdicional, direccion, setDireccion, gpsBuscando, pedirGps,
     handleArchivoSeleccionado, enviar, enviando, error, reporteCreado,
-    matchesEncontrados, mostrarModalMatches, setMostrarModalMatches,
+    cotejo, mostrarModalMatches, setMostrarModalMatches,
   } = useNuevoReporte(tipoInicial);
 
   return (
@@ -54,7 +54,7 @@ function FormularioNuevoReporte() {
             automático.
           </p>
 
-          {matchesEncontrados.length > 0 ? (
+          {Boolean(cotejo?.matches.length || cotejo?.review_candidates?.length) ? (
             <div className="pt-2">
               <button
                 type="button"
@@ -62,24 +62,31 @@ function FormularioNuevoReporte() {
                 className="inline-flex items-center gap-2 rounded-2xl bg-terracota px-5 py-3 text-xs font-bold text-white shadow-warm-card hover:bg-terracota-600 active:scale-95 transition-all"
               >
                 <Icono nombre="mira" className="size-4" />
-                <span>¡Hay {matchesEncontrados.length} posibles coincidencias! Ver ahora</span>
+                <span>{cotejo?.matches.length
+                  ? `Hay ${cotejo.matches.length} posibles coincidencias. Ver ahora`
+                  : 'Revisar avisos de similitud baja'}</span>
               </button>
             </div>
           ) : (
-            <div className="pt-2 flex justify-center gap-3">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 rounded-2xl bg-white border border-borde-calido px-5 py-2.5 text-xs font-bold text-corteza hover:bg-lino-suave"
-              >
-                <span>Ir a la cartelera</span>
-              </Link>
-              <Link
-                href="/mapa"
-                className="inline-flex items-center gap-2 rounded-2xl bg-terracota px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-terracota-600"
-              >
-                <span>Ver en el mapa</span>
-              </Link>
-            </div>
+            <>
+              {cotejo?.matches.length === 0 && (
+                <p className="text-xs text-corteza-suave">Todavía no encontramos coincidencias visuales.</p>
+              )}
+              <div className="pt-2 flex justify-center gap-3">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white border border-borde-calido px-5 py-2.5 text-xs font-bold text-corteza hover:bg-lino-suave"
+                >
+                  <span>Ir a la cartelera</span>
+                </Link>
+                <Link
+                  href="/mapa"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-terracota px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-terracota-600"
+                >
+                  <span>Ver en el mapa</span>
+                </Link>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -173,6 +180,25 @@ function FormularioNuevoReporte() {
               </label>
             )}
           </div>
+
+          {vistaPrevia && (
+            <div className="space-y-2">
+              {fotosAdicionales.length < 3 && (
+                <label className="inline-flex cursor-pointer text-xs font-bold text-terracota">
+                  Agregar fotos de perfil o cuerpo entero (opcional)
+                  <input type="file" accept="image/*" multiple onChange={agregarFotos} className="sr-only" />
+                </label>
+              )}
+              {fotosAdicionales.map((foto, index) => (
+                <div key={index} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate">{foto.name}</span>
+                  <button type="button" className="text-terracota" onClick={() => quitarFotoAdicional(index)}>
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 3. Datos del Animal */}
           {tipoReporte !== 'alerta_cebo' ? (

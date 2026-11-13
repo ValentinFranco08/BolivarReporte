@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from ..models import ReportStatus, ReportPriority, UserRole, AnimalReportType, PetType, PetHealthStatus, RemumStatus, HealthEventType
@@ -98,6 +98,12 @@ class ReportSubmission(ReportCreate):
     is_novel_category: Optional[bool] = False
     suggested_area: Optional[str] = None
     embedding: Optional[List[float]] = None
+    additional_image_paths: list[str] = Field(default_factory=list, max_length=3)
+
+class ReportPhotoResponse(BaseModel):
+    image_path: str
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ReportResponse(ReportBase):
     id: int
@@ -110,6 +116,7 @@ class ReportResponse(ReportBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     
+    additional_photos: list[ReportPhotoResponse] = Field(default_factory=list)
     category: Optional[CategoryResponse] = None
     prediction: Optional[AIPredictionResponse] = None
     # user: Optional[UserResponse] = None # Omitimos detalles del usuario por privacidad
@@ -122,9 +129,12 @@ class PetMatchCandidate(BaseModel):
     semantic_similarity: Optional[float] = None
     distance_km: float
     combined_score: float
+    query_image_path: str | None = None
+    matched_image_path: str | None = None
 
 class PetMatchResponse(BaseModel):
     matches: List[PetMatchCandidate]
+    review_candidates: list[PetMatchCandidate] = Field(default_factory=list)
     total_checked: int
 
 class ReportUpdateStatus(BaseModel):

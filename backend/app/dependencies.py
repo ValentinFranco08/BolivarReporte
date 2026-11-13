@@ -19,13 +19,13 @@ from .services.reports import ReportService
 from .services.authentication import AuthService
 from .services.feedback import FeedbackService
 from .services.remum import RemumService
-from .services.matching import MatchingService
+from .services.matching import MatchingPolicy, MatchingService
 
 
 @lru_cache(maxsize=1)
 def get_predictor():
     """Una instancia por proceso; los pesos se cargan al inicializarla."""
-    return LazyPredictor()
+    return LazyPredictor(pet_checkpoint=settings.pet_reid_checkpoint)
 
 
 @lru_cache(maxsize=1)
@@ -65,7 +65,7 @@ def get_auth_service(db: Session = Depends(get_db)):
 
 
 def get_matching_service(db: Session = Depends(get_db)):
-    return MatchingService(reports=ReportDAO(db))
+    return MatchingService(reports=ReportDAO(db), policy=MatchingPolicy(settings.legacy_pet_visual_threshold))
 
 
 def get_remum_service(db: Session = Depends(get_db), files=Depends(get_storage)):

@@ -134,3 +134,107 @@ def test_pet_matching_endpoints(client, db):
     res_res = client.patch(f"/api/reports/{rep2_id}/resolve", headers=headers)
     assert res_res.status_code == 200
     assert res_res.json()["is_resolved"] is True
+
+
+def test_identity_matches_without_metadata_and_skips_other_versions(client, db):
+    def report(vector, *, version="pet-reid-test", report_type=AnimalReportType.ENCONTRADO, **fields):
+        return Report(
+            report_type=report_type, pet_type=PetType.PERRO, image_path="/uploads/perro.jpg",
+            embedding=json.dumps({"vector": vector, "version": version, "threshold": 0.8}),
+            **fields,
+        )
+
+    found = report([1.0, 0.0])
+    lost = report([0.9, 0.4358899], report_type=AnimalReportType.PERDIDO, pet_name="Milo")
+    near = report([0.79, (1 - 0.79 ** 2) ** 0.5])
+    review_floor = report([0.50, 0.75 ** 0.5])
+    below_floor = report([0.49, (1 - 0.49 ** 2) ** 0.5], color_description="Negro")
+    conflicting_near = report([0.79, (1 - 0.79 ** 2) ** 0.5], color_description="Blanco")
+    found.color_description = "Negro"
+    similar_breed = report([0.6, 0.8], pet_breed="Labrador", color_description="Dorado")
+    different_version = report([1.0, 0.0], version="pet-reid-other")
+    db.add_all([found, lost, near, review_floor, below_floor, conflicting_near, similar_breed, different_version])
+    db.commit()
+
+    response = client.get(f"/api/reports/{found.id}/matches")
+    assert response.status_code == 200
+    result = response.json()
+    assert [item["report"]["id"] for item in result["matches"]] == [lost.id]
+    assert [item["report"]["id"] for item in result["review_candidates"]] == [near.id, review_floor.id]
+    assert result["total_checked"] == 1
+
+
+def test_identity_matches_using_an_additional_photo(client, db):
+    from app.models import ReportPhoto
+
+    def embedding(vector):
+        return json.dumps({"version": "pet-reid-test", "threshold": 0.8, "vector": vector})
+
+    found = Report(
+        report_type=AnimalReportType.ENCONTRADO, pet_type=PetType.PERRO,
+        image_path="/uploads/found.jpg", embedding=embedding([1.0, 0.0]),
+        additional_photos=[ReportPhoto(image_path="/uploads/found-profile.jpg", embedding=embedding([0.0, 1.0]))],
+    )
+    lost = Report(
+        report_type=AnimalReportType.PERDIDO, pet_type=PetType.PERRO,
+        image_path="/uploads/lost.jpg", embedding=embedding([0.0, 1.0]),
+    )
+    db.add_all([found, lost])
+    db.commit()
+
+    response = client.get(f"/api/reports/{lost.id}/matches")
+    assert response.status_code == 200
+    [match] = response.json()["matches"]
+    assert match["report"]["id"] == found.id
+    assert match["matched_image_path"] == "/uploads/found-profile.jpg"
+    assert match["report"]["additional_photos"] == [{"image_path": "/uploads/found-profile.jpg"}]
+
+
+def test_low_visual_similarity_cannot_be_rescued_by_nearby_reports(client, db):
+    import math
+
+    def report(name, cosine):
+        return Report(
+            pet_name=name, report_type=AnimalReportType.PERDIDO, pet_type=PetType.PERRO,
+            image_path=f"/uploads/{name}.jpg",
+            embedding=json.dumps([cosine, math.sqrt(1 - cosine ** 2)]),
+            latitude=-36.23, longitude=-61.11, pet_breed="Mestizo", color_description="Marrón",
+            description="Perro visto en el Parque Las Acollaradas",
+        )
+
+    alejo = report("Alejo", 1.0)
+    # El coseno 0,382 se proyecta a 22 % en la escala visual anterior.
+    kinoto = report("Kinoto", 0.382)
+    weaker = report("Otro perro", 0.31)
+    db.add_all([alejo, kinoto, weaker])
+    db.commit()
+
+    response = client.get(f"/api/reports/{alejo.id}/matches")
+    assert response.status_code == 200
+    assert response.json()["matches"] == []
+
+
+@pytest.mark.parametrize("versioned", [False, True])
+def test_clear_coat_conflict_excludes_otherwise_similar_reports(client, db, versioned):
+    vector = [1.0, 0.0]
+    embedding = json.dumps(
+        {"vector": vector, "version": "pet-reid-test", "threshold": 0.8}
+        if versioned else vector
+    )
+
+    def report(color):
+        return Report(
+            report_type=AnimalReportType.ENCONTRADO, pet_type=PetType.PERRO,
+            image_path="/uploads/perro.jpg", embedding=embedding,
+            color_description=color, pet_breed="Mestizo",
+        )
+
+    found = report("Negro")
+    conflicting = [report("Blanco"), report("Dorazo"), report("Marrón")]
+    compatible = [report("Negro con manchas blancas"), report(None), report("Quizás dorado")]
+    db.add_all([found, *conflicting, *compatible])
+    db.commit()
+
+    response = client.get(f"/api/reports/{found.id}/matches")
+    assert response.status_code == 200
+    assert {item["report"]["id"] for item in response.json()["matches"]} == {row.id for row in compatible}

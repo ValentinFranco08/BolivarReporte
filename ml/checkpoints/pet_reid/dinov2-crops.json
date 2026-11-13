@@ -1,0 +1,64 @@
+{
+  "coverage": {
+    "val_query": {
+      "detected": 53,
+      "photos": 112
+    },
+    "val_gallery": {
+      "detected": 83,
+      "photos": 141
+    },
+    "test_query": {
+      "detected": 68,
+      "photos": 112
+    },
+    "test_gallery": {
+      "detected": 78,
+      "photos": 142
+    }
+  },
+  "metrics": {
+    "full": {
+      "1": {
+        "recall_at_5": 0.65625,
+        "top5_at_threshold": 0.078125,
+        "false_alert_rate": 0.0416666679084301,
+        "threshold": 0.7314221262931824
+      },
+      "3": {
+        "recall_at_5": 0.734375,
+        "top5_at_threshold": 0.109375,
+        "false_alert_rate": 0.0625,
+        "threshold": 0.719600260257721
+      }
+    },
+    "annotated": {
+      "1": {
+        "recall_at_5": 0.90625,
+        "top5_at_threshold": 0.140625,
+        "false_alert_rate": 0.0416666679084301,
+        "threshold": 0.7269008755683899
+      },
+      "3": {
+        "recall_at_5": 0.921875,
+        "top5_at_threshold": 0.171875,
+        "false_alert_rate": 0.0625,
+        "threshold": 0.7526350617408752
+      }
+    },
+    "automatic": {
+      "1": {
+        "recall_at_5": 0.703125,
+        "top5_at_threshold": 0.09375,
+        "false_alert_rate": 0.02083333395421505,
+        "threshold": 0.7276724576950073
+      },
+      "3": {
+        "recall_at_5": 0.8125,
+        "top5_at_threshold": 0.125,
+        "false_alert_rate": 0.0416666679084301,
+        "threshold": 0.7384669780731201
+      }
+    }
+  }
+}

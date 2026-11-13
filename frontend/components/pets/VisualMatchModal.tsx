@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { obtenerMatchesMascota, resolverReporte, urlDeImagen } from '@/lib/api';
-import type { Reporte, PetMatchCandidate } from '@/models/reports';
+import type { Reporte, PetMatchResponse } from '@/models/reports';
 import { Icono } from '@/components/ui/Icono';
 
 interface VisualMatchModalProps {
@@ -11,9 +11,11 @@ interface VisualMatchModalProps {
   token?: string | null;
 }
 
+const formatoSimilitud = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 });
+
 export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalProps) {
   const [cargando, setCargando] = useState(true);
-  const [matches, setMatches] = useState<PetMatchCandidate[]>([]);
+  const [resultado, setResultado] = useState<PetMatchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resolviendo, setResolviendo] = useState(false);
   const [resueltoExito, setResueltoExito] = useState(false);
@@ -22,9 +24,7 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
   useEffect(() => {
     if (!reporte) return;
     obtenerMatchesMascota(reporte.id)
-      .then((res) => {
-        setMatches(res.matches || []);
-      })
+      .then(setResultado)
       .catch((err) => {
         setError(err.message || 'No pudimos calcular las coincidencias visuales.');
       })
@@ -52,8 +52,11 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
     }
   };
 
-  const imgTuReporte = urlDeImagen(reporte.image_path) || '/favicon.ico';
-  const candidatoActual = matches[indiceActual];
+  const coincidencias = resultado?.matches ?? [];
+  const candidatos = [...coincidencias, ...(resultado?.review_candidates ?? [])];
+  const candidatoActual = candidatos[indiceActual];
+  const soloRevision = Boolean(candidatoActual && indiceActual >= coincidencias.length);
+  const imgTuReporte = urlDeImagen(candidatoActual?.query_image_path || reporte.image_path) || '/favicon.ico';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-corteza/60 backdrop-blur-xs animate-in fade-in duration-150">
@@ -68,11 +71,11 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
               <div className="flex items-center gap-2">
                 <p className="rotulo">Cotejo visual</p>
                 <h2 id="titulo-cotejo" className="text-base font-extrabold tracking-[-.03em] text-corteza sm:text-lg">
-                  Posible coincidencia
+                  {soloRevision ? 'Similitud baja · revisar fotos' : candidatoActual ? 'Posible coincidencia' : 'Comparar avisos'}
                 </h2>
-                {matches.length > 0 && (
+                {candidatos.length > 0 && (
                   <span className="estado-sello bg-salvia-50 border border-salvia-200 px-2 py-0.5 font-bold text-salvia-700">
-                    Candidato {indiceActual + 1} de {matches.length}
+                    Candidato {indiceActual + 1} de {candidatos.length}
                   </span>
                 )}
               </div>
@@ -124,17 +127,16 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
           )}
 
           {/* Sin coincidencias */}
-          {!cargando && !error && matches.length === 0 && (
+          {!cargando && !error && candidatos.length === 0 && (
             <div className="rounded-3xl border border-borde-calido bg-lino-suave p-8 text-center space-y-2">
               <div className="mx-auto size-10 rounded-full bg-white flex items-center justify-center">
                 <Icono nombre="mira" className="size-5 text-corteza-clara" />
               </div>
               <h3 className="font-serif text-base font-bold text-corteza">
-                No encontramos coincidencias cercanas todavía
+                Todavía no encontramos coincidencias visuales
               </h3>
               <p className="text-xs max-w-sm mx-auto leading-relaxed text-corteza-suave">
-                Tu publicación permanece activa en la red de Bolívar. Si un vecino publica una foto
-                con rasgos similares a tu mascota, te avisaremos al instante.
+                Tu publicación sigue activa en la red de Bolívar.
               </p>
             </div>
           )}
@@ -142,6 +144,11 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
           {/* ── Visual Match Side-by-Side (Stitch Screen 2) ── */}
           {!cargando && candidatoActual && (
             <div className="space-y-4">
+              {soloRevision && (
+                <p className="border-l-2 border-terracota bg-terracota-50 px-3 py-2 text-xs text-corteza">
+                  El puntaje quedó por debajo del umbral de coincidencia. Compará señas como las manchas, el hocico y las orejas.
+                </p>
+              )}
               {/* Fotos Comparadas Lado a Lado */}
               <div className="grid grid-cols-2 gap-3 border border-borde-fuerte bg-lino p-3 sm:gap-4 sm:p-4">
                 {/* Tu Reporte */}
@@ -168,16 +175,16 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <span className="rotulo !text-salvia-700">
-                      Candidato encontrado
+                      {soloRevision ? 'Aviso para revisar' : 'Reporte sugerido'}
                     </span>
                     <span className="text-[11px] font-bold text-terracota">
-                      {Math.round(candidatoActual.visual_similarity * 100)}% similitud
+                      {formatoSimilitud.format(candidatoActual.visual_similarity * 100)}% de similitud visual
                     </span>
                   </div>
                   <div className="relative aspect-square w-full overflow-hidden border border-salvia-200 bg-white">
                     <img
-                      src={urlDeImagen(candidatoActual.report.image_path) || '/favicon.ico'}
-                      alt="Candidato encontrado"
+                      src={urlDeImagen(candidatoActual.matched_image_path || candidatoActual.report.image_path) || '/favicon.ico'}
+                      alt="Foto del aviso comparado"
                       className="size-full object-cover"
                     />
                     <div className="absolute bottom-2 left-2 bg-salvia-700/90 text-white px-2 py-0.5 rounded-lg text-[10px] truncate max-w-[90%]">
@@ -190,57 +197,30 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
                 </div>
               </div>
 
-              {/* Barra de Afinidad Visual y Multimodal */}
-              <div className="space-y-2 border-y border-borde-fuerte py-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-corteza">
-                    Afinidad multimodal (ViT Auto-Crop + Rasgos)
-                  </span>
-                  <span className="estado-sello bg-terracota-50 border border-terracota-200 px-2.5 py-0.5 font-bold text-terracota">
-                    {Math.round(candidatoActual.combined_score * 100)}% Match global
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden bg-lino-suave">
-                  <div
-                    className="h-full bg-terracota transition-[width] duration-300"
-                    style={{
-                      width: `${Math.round(candidatoActual.combined_score * 100)}%`,
-                    }}
-                  />
-                </div>
-                
-                {/* Desglose de factores */}
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
-                  <span className="rounded bg-white border border-borde-suave px-2 py-0.5 text-corteza font-medium">
-                    👁️ Similitud visual: <strong>{Math.round(candidatoActual.visual_similarity * 100)}%</strong>
-                  </span>
-                  {candidatoActual.semantic_similarity !== undefined && (
-                    <span className="rounded bg-white border border-borde-suave px-2 py-0.5 text-salvia-700 font-medium">
-                      🐾 Rasgos y pelaje: <strong>{Math.round(candidatoActual.semantic_similarity * 100)}%</strong>
-                    </span>
+              {(candidatoActual.distance_km !== 999 || candidatoActual.report.pet_breed ||
+                candidatoActual.report.color_description) && (
+                <dl className="flex flex-wrap gap-x-5 gap-y-2 border-y border-borde-fuerte py-3 text-xs">
+                  {candidatoActual.distance_km !== 999 && (
+                    <div><dt className="inline">Distancia: </dt><dd className="inline font-bold">{candidatoActual.distance_km} km</dd></div>
                   )}
-                  <span className="rounded bg-white border border-borde-suave px-2 py-0.5 text-corteza-suave">
-                    📍 Distancia: <strong>{candidatoActual.distance_km} km</strong>
-                  </span>
-                </div>
-                
-                <p className="text-xs text-corteza-suave leading-relaxed pt-1">
-                  Ubicación: a <strong>{candidatoActual.distance_km} km</strong> de donde se reportó
-                  ({candidatoActual.report.address || 'Bolívar'}).
-                </p>
-              </div>
+                  {candidatoActual.report.pet_breed && (
+                    <div><dt className="inline">Raza declarada: </dt><dd className="inline font-bold">{candidatoActual.report.pet_breed}</dd></div>
+                  )}
+                  {candidatoActual.report.color_description && (
+                    <div><dt className="inline">Pelaje: </dt><dd className="inline font-bold">{candidatoActual.report.color_description}</dd></div>
+                  )}
+                </dl>
+              )}
 
               {/* Botonera de Acción Directa */}
               <div className="space-y-2 pt-1">
-                {candidatoActual.report.contact_phone && (
+                {!soloRevision && candidatoActual.report.contact_phone && (
                   <a
                     href={`https://wa.me/${candidatoActual.report.contact_phone.replace(
                       /[^\d+]/g,
                       ''
                     )}?text=${encodeURIComponent(
-                      `Hola! Vi tu publicación en Bolívar Animal y el comparador detectó coincidencia con mi mascota (${Math.round(
-                        candidatoActual.visual_similarity * 100
-                      )}% match). ¿Podemos hablar?`
+                      `¡Hola! Vi tu publicación en Bolívar Animal. Las fotos muestran un posible parecido con mi mascota. ¿Podemos hablar?`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -252,26 +232,26 @@ export function VisualMatchModal({ reporte, onClose, token }: VisualMatchModalPr
                 )}
 
                 <div className="flex items-center gap-2">
-                  {matches.length > 1 && (
+                  {candidatos.length > 1 && (
                     <button
                       type="button"
                       onClick={() =>
-                        setIndiceActual((prev) => (prev + 1) % matches.length)
+                        setIndiceActual((prev) => (prev + 1) % candidatos.length)
                       }
                       className="flex-1 py-2.5 px-3 rounded-2xl bg-white border border-borde-calido text-corteza font-semibold text-xs hover:bg-lino-suave transition-colors"
                     >
-                      Ver siguiente candidato ({indiceActual + 1} de {matches.length}) →
+                      Ver siguiente candidato ({indiceActual + 1} de {candidatos.length}) →
                     </button>
                   )}
 
-                  <button
+                  {!soloRevision && <button
                     type="button"
                     disabled={resolviendo || resueltoExito}
                     onClick={() => handleResolver(candidatoActual.report.id)}
                     className="py-2.5 px-4 rounded-2xl bg-terracota-50 border border-terracota-200 text-terracota font-bold text-xs hover:bg-terracota hover:text-white transition-colors"
                   >
                     Confirmar Recuperación de la Mascota
-                  </button>
+                  </button>}
                 </div>
               </div>
             </div>

@@ -1,0 +1,164 @@
+{
+  "vit": {
+    "1": {
+      "dogreid": {
+        "recall_at_5": 0.1759689897298813,
+        "top5_at_threshold": 0.026356589049100876,
+        "false_alert_rate": 0.1351582556962967,
+        "threshold": 0.5970298051834106
+      },
+      "mpdd": {
+        "recall_at_5": 0.9056603908538818,
+        "top5_at_threshold": 0.698113203048706,
+        "false_alert_rate": 0.45098039507865906,
+        "threshold": 0.5970298051834106
+      }
+    },
+    "3": {
+      "dogreid": {
+        "recall_at_5": 0.19379845261573792,
+        "top5_at_threshold": 0.042635660618543625,
+        "false_alert_rate": 0.1719418317079544,
+        "threshold": 0.6136956214904785
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.8679245114326477,
+        "false_alert_rate": 0.45098039507865906,
+        "threshold": 0.6136956214904785
+      }
+    },
+    "4": {
+      "dogreid": {
+        "recall_at_5": 0.1914728730916977,
+        "top5_at_threshold": 0.043410852551460266,
+        "false_alert_rate": 0.17450812458992004,
+        "threshold": 0.6136956214904785
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.9245283007621765,
+        "false_alert_rate": 0.4901960790157318,
+        "threshold": 0.6136956214904785
+      }
+    }
+  },
+  "dogfacenet": {
+    "1": {
+      "dogreid": {
+        "recall_at_5": 0.16744185984134674,
+        "top5_at_threshold": 0.028682170435786247,
+        "false_alert_rate": 0.14713430404663086,
+        "threshold": 0.7353198528289795
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.4528301954269409,
+        "false_alert_rate": 0.21568627655506134,
+        "threshold": 0.7353198528289795
+      }
+    },
+    "3": {
+      "dogreid": {
+        "recall_at_5": 0.1992247998714447,
+        "top5_at_threshold": 0.040310077369213104,
+        "false_alert_rate": 0.1864841729402542,
+        "threshold": 0.7541748881340027
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.7169811129570007,
+        "false_alert_rate": 0.21568627655506134,
+        "threshold": 0.7541748881340027
+      }
+    },
+    "4": {
+      "dogreid": {
+        "recall_at_5": 0.19844961166381836,
+        "top5_at_threshold": 0.040310077369213104,
+        "false_alert_rate": 0.19418306648731232,
+        "threshold": 0.7541748881340027
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.7169811129570007,
+        "false_alert_rate": 0.21568627655506134,
+        "threshold": 0.7541748881340027
+      }
+    }
+  },
+  "dogreid": {
+    "1": {
+      "dogreid": {
+        "recall_at_5": 0.17519380152225494,
+        "top5_at_threshold": 0.03100775182247162,
+        "false_alert_rate": 0.17365269362926483,
+        "threshold": 0.6930736303329468
+      },
+      "mpdd": {
+        "recall_at_5": 0.9811320900917053,
+        "top5_at_threshold": 0.5471698045730591,
+        "false_alert_rate": 0.3333333432674408,
+        "threshold": 0.6930736303329468
+      }
+    },
+    "3": {
+      "dogreid": {
+        "recall_at_5": 0.20155039429664612,
+        "top5_at_threshold": 0.059689924120903015,
+        "false_alert_rate": 0.2797262668609619,
+        "threshold": 0.7007642388343811
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.8301886916160583,
+        "false_alert_rate": 0.3333333432674408,
+        "threshold": 0.7007642388343811
+      }
+    },
+    "4": {
+      "dogreid": {
+        "recall_at_5": 0.20155039429664612,
+        "top5_at_threshold": 0.060465116053819656,
+        "false_alert_rate": 0.28913602232933044,
+        "threshold": 0.7007642388343811
+      },
+      "mpdd": {
+        "recall_at_5": 0.9811320900917053,
+        "top5_at_threshold": 0.849056601524353,
+        "false_alert_rate": 0.3921568691730499,
+        "threshold": 0.7007642388343811
+      }
+    }
+  },
+  "counts": {
+    "train": {
+      "photos": 3090,
+      "dogs": 625
+    },
+    "val_query": {
+      "photos": 427,
+      "dogs": 120
+    },
+    "val_gallery": {
+      "photos": 160,
+      "dogs": 69
+    },
+    "test_query": {
+      "photos": 2459,
+      "dogs": 777
+    },
+    "test_gallery": {
+      "photos": 1296,
+      "dogs": 512
+    },
+    "mpdd_query": {
+      "photos": 104,
+      "dogs": 96
+    },
+    "mpdd_gallery": {
+      "photos": 269,
+      "dogs": 48
+    }
+  }
+}

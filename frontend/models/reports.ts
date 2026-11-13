@@ -23,6 +23,7 @@ export interface Reporte {
   id: number;
   description: string | null;
   image_path: string;
+  additional_photos?: { image_path: string }[];
   status: Estado;
   priority: Prioridad;
   address: string | null;
@@ -46,19 +47,23 @@ export interface Reporte {
 export interface PetMatchCandidate {
   report: Reporte;
   visual_similarity: number;
-  semantic_similarity?: number;
+  semantic_similarity?: number | null;
   distance_km: number;
   combined_score: number;
+  query_image_path?: string | null;
+  matched_image_path?: string | null;
 }
 
 export interface PetMatchResponse {
   matches: PetMatchCandidate[];
+  review_candidates?: PetMatchCandidate[];
   total_checked: number;
 }
 
 export interface NuevoReporte {
   description: string;
   image_path: string;
+  additional_image_paths?: string[];
   predicted_class: string;
   confidence: number;
   corrected_class: string | null;

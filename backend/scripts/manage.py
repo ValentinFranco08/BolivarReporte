@@ -34,6 +34,7 @@ def main():
     parser.add_argument("command", choices=("migrate", "seed", "reindex"))
     parser.add_argument("--adopt-existing", action="store_true")
     parser.add_argument("--demo-users", action="store_true")
+    parser.add_argument("--legacy", action="store_true", help="Reindexar con el cotejo visual anterior")
     args = parser.parse_args()
     if args.command == "migrate":
         return migrate(args.adopt_existing)
@@ -50,7 +51,7 @@ def main():
                 PredictionDAO(session), UnitOfWork(session)).seed(args.demo_users)
         else:
             from app.dependencies import get_predictor, get_storage
-            print(ReindexService(ReportDAO(session), get_predictor(), get_storage(), UnitOfWork(session)).run())
+            print(ReindexService(ReportDAO(session), get_predictor(), get_storage(), UnitOfWork(session)).run(legacy=args.legacy))
 
 if __name__ == "__main__":
     main()

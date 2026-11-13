@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -55,3 +55,18 @@ class Report(Base):
     user = relationship("User", back_populates="reports")
     category = relationship("Category", back_populates="reports")
     prediction = relationship("AIPrediction", back_populates="report", uselist=False)
+    additional_photos = relationship(
+        "ReportPhoto", back_populates="report", cascade="all, delete-orphan", order_by="ReportPhoto.id", lazy="selectin",
+    )
+
+
+class ReportPhoto(Base):
+    __tablename__ = "report_photos"
+
+    id = Column(Integer, primary_key=True)
+    report_id = Column(Integer, ForeignKey("reports.id", ondelete="CASCADE"), nullable=False)
+    image_path = Column(String, nullable=False)
+    embedding = Column(Text)
+    __table_args__ = (UniqueConstraint("report_id", "image_path"),)
+
+    report = relationship("Report", back_populates="additional_photos")

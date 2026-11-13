@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { direccionDesdeCoords, ErrorAPI, leerToken } from '@/lib/api';
-import type { PetMatchCandidate, Reporte, TipoMascota, TipoReporteAnimal } from '@/models/reports';
+import type { PetMatchResponse, Reporte, TipoMascota, TipoReporteAnimal } from '@/models/reports';
 import { publicarReporte } from '@/services/publicarReporte';
 
 export function useNuevoReporte(tipoInicial: TipoReporteAnimal) {
@@ -16,6 +16,7 @@ export function useNuevoReporte(tipoInicial: TipoReporteAnimal) {
   const [descripcion, setDescripcion] = useState('');
 
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [fotosAdicionales, setFotosAdicionales] = useState<File[]>([]);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
   const [lat, setLat] = useState(-36.2333);
   const [lng, setLng] = useState(-61.1167);
@@ -25,7 +26,7 @@ export function useNuevoReporte(tipoInicial: TipoReporteAnimal) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reporteCreado, setReporteCreado] = useState<Reporte | null>(null);
-  const [matchesEncontrados, setMatchesEncontrados] = useState<PetMatchCandidate[]>([]);
+  const [cotejo, setCotejo] = useState<PetMatchResponse | null>(null);
   const [mostrarModalMatches, setMostrarModalMatches] = useState(false);
 
   useEffect(() => {
@@ -53,6 +54,16 @@ export function useNuevoReporte(tipoInicial: TipoReporteAnimal) {
     if (!foto) return;
     setArchivo(foto);
     setVistaPrevia(URL.createObjectURL(foto));
+  };
+
+  const agregarFotos = (event: ChangeEvent<HTMLInputElement>) => {
+    const fotos = Array.from(event.target.files ?? []);
+    setFotosAdicionales(actuales => [...actuales, ...fotos].slice(0, 3));
+    event.target.value = '';
+  };
+
+  const quitarFotoAdicional = (index: number) => {
+    setFotosAdicionales(actuales => actuales.filter((_, posicion) => posicion !== index));
   };
 
   const quitarFoto = () => {
@@ -83,13 +94,13 @@ export function useNuevoReporte(tipoInicial: TipoReporteAnimal) {
         health_status: 'sano',
         contact_name: contactoNombre || undefined,
         contact_phone: contactoTelefono || undefined,
-      }, leerToken(), setReporteCreado);
-      setMatchesEncontrados(matches);
-      setMostrarModalMatches(matches.length > 0);
+      }, leerToken(), setReporteCreado, fotosAdicionales);
+      setCotejo(matches);
+      setMostrarModalMatches(Boolean(matches?.matches.length));
     } catch (err) {
       setError(err instanceof ErrorAPI
         ? err.message
-        : 'Ocurrió un error al guardar la publicación. Revisá los datos.');
+        : err instanceof Error ? err.message : 'Ocurrió un error al guardar la publicación.');
     } finally {
       setEnviando(false);
     }
@@ -99,8 +110,8 @@ export function useNuevoReporte(tipoInicial: TipoReporteAnimal) {
     tipoReporte, setTipoReporte, tipoMascota, setTipoMascota, nombreMascota, setNombreMascota,
     raza, setRaza, color, setColor, contactoNombre, setContactoNombre,
     contactoTelefono, setContactoTelefono, descripcion, setDescripcion,
-    vistaPrevia, quitarFoto, direccion, setDireccion, gpsBuscando, pedirGps,
+    vistaPrevia, quitarFoto, fotosAdicionales, agregarFotos, quitarFotoAdicional, direccion, setDireccion, gpsBuscando, pedirGps,
     handleArchivoSeleccionado, enviar, enviando, error, reporteCreado,
-    matchesEncontrados, mostrarModalMatches, setMostrarModalMatches,
+    cotejo, mostrarModalMatches, setMostrarModalMatches,
   };
 }

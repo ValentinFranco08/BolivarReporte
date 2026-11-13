@@ -8,7 +8,7 @@ vi.mock('next/navigation', () => ({
 
 afterEach(() => vi.unstubAllGlobals());
 
-test('publica la foto y muestra la coincidencia con otro reporte perdido', async () => {
+test.each(['coincidencia', 'revisión', 'vacío'])('publica la foto y muestra el cotejo (%s)', async (resultado) => {
   const milo = { id: 18, pet_name: 'Milo', report_type: 'perdido', image_path: '/uploads/milo.jpg' };
   const kinoto = { id: 9, pet_name: 'Kinoto', report_type: 'perdido', image_path: '/uploads/kinoto.jpg' };
   const pedir = vi.fn(async (url: string, init?: RequestInit) => {
@@ -26,7 +26,12 @@ test('publica la foto y muestra la coincidencia con otro reporte perdido', async
     }
     if (ruta === '/api/reports/18/matches') {
       return Response.json({
-        matches: [{ report: kinoto, visual_similarity: 1, distance_km: 1.15, combined_score: 0.851 }],
+        matches: resultado === 'coincidencia'
+          ? [{ report: kinoto, visual_similarity: 1, distance_km: 1.15, combined_score: 0.851 }]
+          : [],
+        review_candidates: resultado === 'revisión'
+          ? [{ report: { ...kinoto, contact_phone: '123' }, visual_similarity: 0.714, distance_km: 1.15 }]
+          : [],
       });
     }
     throw new Error(`Ruta inesperada: ${ruta}`);
@@ -45,6 +50,19 @@ test('publica la foto y muestra la coincidencia con otro reporte perdido', async
   fireEvent.click(screen.getByRole('button', { name: 'Publicar aviso en Bolívar' }));
 
   expect(await screen.findByRole('heading', { name: /publicación subida con éxito/i })).toBeInTheDocument();
-  expect(await screen.findByRole('dialog', { name: /posible coincidencia/i })).toBeInTheDocument();
-  expect(await screen.findByText('Kinoto')).toBeInTheDocument();
+  if (resultado === 'coincidencia') {
+    expect(await screen.findByRole('dialog', { name: /posible coincidencia/i })).toBeInTheDocument();
+    expect(await screen.findByText('Kinoto')).toBeInTheDocument();
+    expect(screen.getByText('100% de similitud visual')).toBeInTheDocument();
+    expect(screen.queryByText(/85%/)).not.toBeInTheDocument();
+  } else if (resultado === 'revisión') {
+    fireEvent.click(await screen.findByRole('button', { name: 'Revisar avisos de similitud baja' }));
+    expect(await screen.findByRole('dialog', { name: /similitud baja/i })).toBeInTheDocument();
+    expect(screen.getByText('71,4% de similitud visual')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /confirmar recuperación/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /whatsapp/i })).not.toBeInTheDocument();
+  } else {
+    expect(await screen.findByText('Todavía no encontramos coincidencias visuales.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  }
 });

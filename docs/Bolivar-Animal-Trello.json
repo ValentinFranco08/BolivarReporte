@@ -1,0 +1,1118 @@
+{
+  "name": "Bolívar Animal · Desarrollo y validación",
+  "desc": "Plataforma vecinal de San Carlos de Bolívar para publicar y consultar avisos sobre animales, cotejar fotos, registrar mascotas en REMUM y gestionar casos desde el panel operativo. La IA sugiere categorías y posibles coincidencias que una persona puede revisar.",
+  "prefs": {
+    "permissionLevel": "private"
+  },
+  "lists": [
+    {
+      "id": "list-1",
+      "name": "Producto y alcance",
+      "pos": 1000
+    },
+    {
+      "id": "list-2",
+      "name": "Implementado",
+      "pos": 2000
+    },
+    {
+      "id": "list-3",
+      "name": "Experimentos de IA",
+      "pos": 3000
+    },
+    {
+      "id": "list-4",
+      "name": "Pendiente",
+      "pos": 4000
+    }
+  ],
+  "labels": [
+    {
+      "id": "label-1",
+      "name": "Reportes",
+      "color": "blue"
+    },
+    {
+      "id": "label-2",
+      "name": "Cotejo",
+      "color": "green"
+    },
+    {
+      "id": "label-3",
+      "name": "REMUM",
+      "color": "orange"
+    },
+    {
+      "id": "label-4",
+      "name": "Operación",
+      "color": "yellow"
+    },
+    {
+      "id": "label-5",
+      "name": "IA",
+      "color": "purple"
+    },
+    {
+      "id": "label-6",
+      "name": "Arquitectura",
+      "color": "sky"
+    },
+    {
+      "id": "label-7",
+      "name": "QA",
+      "color": "pink"
+    }
+  ],
+  "cards": [
+    {
+      "id": "BA-00",
+      "name": "BA-00 · Objetivo, actores y recorrido de la aplicación",
+      "desc": "**Descripción.** Centralizar avisos de pérdida, hallazgo, tránsito, adopción y alerta de cebo. Vincular vecinos y tutores mediante avisos, fotos y fichas REMUM.\n\n**Actores.** Vecino que publica o consulta, tutor, operador de Zoonosis y persona que mantiene la aplicación y sus modelos.\n\n**Recorrido de demo.** Publicar un hallazgo con una foto → consultar posibles coincidencias → comparar fotos → registrar o resolver el caso según corresponda → consultar la cartelera. Como recorrido independiente, generar y consultar una credencial REMUM por código.",
+      "idList": "list-1",
+      "idLabels": [],
+      "idChecklists": [
+        "checklist-BA-00"
+      ],
+      "pos": 1000
+    },
+    {
+      "id": "BA-01",
+      "name": "BA-01 · Crear cuenta e iniciar sesión",
+      "desc": "**Caso de uso.** Un vecino se registra con nombre, correo y contraseña. Inicia sesión y la aplicación identifica al usuario mediante su token. Si las credenciales son incorrectas, se muestra un error y se conserva el formulario.\n\n\n**Evidencia.** `backend/tests/test_main.py`, rutas `/registro` y `/login`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-4"
+      ],
+      "idChecklists": [
+        "checklist-BA-01"
+      ],
+      "pos": 1000
+    },
+    {
+      "id": "BA-02",
+      "name": "BA-02 · Publicar pérdida, hallazgo, tránsito o adopción",
+      "desc": "**Caso de uso.** Un vecino elige el tipo de aviso, adjunta una foto y publica. Puede agregar señas y datos de contacto si los conoce. En un hallazgo puede desconocer el nombre, la raza y el pelaje.\n\n\n**Evidencia.** `frontend/app/reportes/nuevo/page.tsx`, `POST /api/reports`, `frontend/__tests__/nuevo-reporte.test.tsx`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-1"
+      ],
+      "idChecklists": [
+        "checklist-BA-02"
+      ],
+      "pos": 2000
+    },
+    {
+      "id": "BA-03",
+      "name": "BA-03 · Adjuntar varias fotos",
+      "desc": "**Caso de uso.** Un vecino adjunta la foto principal y agrega otras tomas de perfil o cuerpo entero. Puede quitar las adicionales antes de publicar.\n\n\n**Evidencia.** `ReportSubmission`, `ReportPhoto` y migración `f26d90a115aa`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-1"
+      ],
+      "idChecklists": [
+        "checklist-BA-03"
+      ],
+      "pos": 3000
+    },
+    {
+      "id": "BA-04",
+      "name": "BA-04 · Consultar cartelera y mapa",
+      "desc": "**Caso de uso.** Un vecino abre el listado de reportes o el mapa y consulta los avisos de la zona. Puede filtrar el listado y abrir una ficha para ver sus datos.\n\n\n**Evidencia.** `/reportes`, `/mapa` y `GET /api/reports`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-1"
+      ],
+      "idChecklists": [
+        "checklist-BA-04"
+      ],
+      "pos": 4000
+    },
+    {
+      "id": "BA-05",
+      "name": "BA-05 · Cargar ubicación en un reporte",
+      "desc": "**Caso de uso.** El vecino solicita su ubicación desde el formulario. Si el navegador la entrega, el formulario actualiza las coordenadas y busca una dirección legible. El vecino puede editar la dirección.\n\n\n**Evidencia.** `frontend/controllers/useNuevoReporte.ts`, `frontend/lib/api.ts`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-1"
+      ],
+      "idChecklists": [
+        "checklist-BA-05"
+      ],
+      "pos": 5000
+    },
+    {
+      "id": "BA-06",
+      "name": "BA-06 · Clasificar la situación a partir de foto y texto",
+      "desc": "**Caso de uso.** Al publicar, el sistema procesa la foto y la descripción en español y propone una categoría de situación. El flujo registra la predicción asociada cuando hay una versión del modelo configurada.\n\n\n**Evidencia.** `POST /api/ai/predict`, `ClassificationService` y pruebas de arquitectura.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-5"
+      ],
+      "idChecklists": [
+        "checklist-BA-06"
+      ],
+      "pos": 6000
+    },
+    {
+      "id": "BA-07",
+      "name": "BA-07 · Buscar posibles coincidencias por foto",
+      "desc": "**Caso de uso.** Después de publicar una pérdida, hallazgo o tránsito, el vecino consulta reportes compatibles. La búsqueda compara vectores visuales y devuelve candidatos para revisión.\n\n\n**Evidencia.** `GET /api/reports/{id}/matches` y `backend/tests/test_pet_matching.py`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-2"
+      ],
+      "idChecklists": [
+        "checklist-BA-07"
+      ],
+      "pos": 7000
+    },
+    {
+      "id": "BA-08",
+      "name": "BA-08 · Exigir evidencia visual antes de sugerir",
+      "desc": "**Caso de prueba.** Alejo y Kinoto comparten ubicación pero su similitud visual es de aproximadamente 22 %. Un segundo caso presenta alta similitud visual y poca información textual.\n\n\n**Evidencia.** `MatchingPolicy`, `LEGACY_PET_VISUAL_THRESHOLD` y regresión de baja similitud visual.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-2"
+      ],
+      "idChecklists": [
+        "checklist-BA-08"
+      ],
+      "pos": 8000
+    },
+    {
+      "id": "BA-09",
+      "name": "BA-09 · Descartar colores de pelaje incompatibles",
+      "desc": "**Caso de prueba.** Un hallazgo «negro» recibe candidatos «dorado», «marrón», «blanco», «negro con manchas blancas» y sin color.\n\n\n**Evidencia.** `backend/app/services/coat_color.py` y pruebas de reporte antiguo y vector versionado.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-2"
+      ],
+      "idChecklists": [
+        "checklist-BA-09"
+      ],
+      "pos": 9000
+    },
+    {
+      "id": "BA-10",
+      "name": "BA-10 · Revisar sugerencias en el comparador",
+      "desc": "**Caso de uso.** El vecino revisa las dos fotos, avanza entre candidatos y decide si contactar. Si la búsqueda queda vacía, la publicación sigue confirmada.\n\n\n**Evidencia.** `VisualMatchModal.tsx`, prueba de publicación con y sin coincidencias.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-2"
+      ],
+      "idChecklists": [
+        "checklist-BA-10"
+      ],
+      "pos": 10000
+    },
+    {
+      "id": "BA-11",
+      "name": "BA-11 · Registrar la resolución de un aviso",
+      "desc": "**Caso de uso.** La API recibe una solicitud autenticada para resolver un aviso. El panel permite actualizar el estado del reporte. El comparador incluye un botón de confirmación, cuyo flujo de sesión debe verificarse en BA-25.\n\n\n**Evidencia.** `PATCH /api/reports/{id}/resolve` y prueba del flujo de coincidencias.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-1"
+      ],
+      "idChecklists": [
+        "checklist-BA-11"
+      ],
+      "pos": 11000
+    },
+    {
+      "id": "BA-12",
+      "name": "BA-12 · Registrar una mascota y generar su QR",
+      "desc": "**Caso de uso.** El tutor completa la ficha de su mascota. El registro guarda el nombre, especie y datos opcionales, y genera un código único. El tutor puede consultar sus mascotas.\n\n\n**Evidencia.** `/remum/nuevo`, `RemumService` y prueba de creación con coordenadas.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-3"
+      ],
+      "idChecklists": [
+        "checklist-BA-12"
+      ],
+      "pos": 12000
+    },
+    {
+      "id": "BA-13",
+      "name": "BA-13 · Consultar y escanear una credencial",
+      "desc": "**Caso de uso.** El vecino abre el escáner o la URL de la credencial y consulta la ficha de la mascota por código.\n\n\n**Evidencia.** `/remum/escanear`, `/qr/[id]` y `GET /api/remum/{qr_code_id}`. La vinculación del contacto real queda en BA-25.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-3"
+      ],
+      "idChecklists": [
+        "checklist-BA-13"
+      ],
+      "pos": 13000
+    },
+    {
+      "id": "BA-14",
+      "name": "BA-14 · Gestionar mascotas comunitarias, padrinos y salud",
+      "desc": "**Caso de uso.** Un vecino consulta fichas comunitarias. Una persona autenticada registra un evento de salud o agrega un padrino a una mascota comunitaria.\n\n\n**Evidencia.** `RemumService` y rutas REMUM `/comunitarios`, `/salud` y `/padrinos`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-3"
+      ],
+      "idChecklists": [
+        "checklist-BA-14"
+      ],
+      "pos": 14000
+    },
+    {
+      "id": "BA-15",
+      "name": "BA-15 · Emitir una alerta de extravío desde REMUM",
+      "desc": "**Caso de uso.** El tutor o administrador activa la alerta desde una ficha. El sistema marca al animal como extraviado y crea un reporte de pérdida. Si la solicitud incluye coordenadas, las usa en el reporte.\n\n\n**Evidencia.** `POST /api/remum/{qr_code_id}/alerta` y `test_remum_denied_alert_does_not_modify_data`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-3"
+      ],
+      "idChecklists": [
+        "checklist-BA-15"
+      ],
+      "pos": 15000
+    },
+    {
+      "id": "BA-16",
+      "name": "BA-16 · Publicar y consultar alertas de cebo",
+      "desc": "**Caso de uso.** El vecino publica un aviso de alerta de cebo con evidencia y ubicación. Otros vecinos consultan avisos ubicados en el mapa. Desde SOS se puede abrir el formulario de alerta e imprimir el recurso de denuncia.\n\n\n**Evidencia.** `/sos`, `/mapa` y `GET /api/alerts/active`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-1"
+      ],
+      "idChecklists": [
+        "checklist-BA-16"
+      ],
+      "pos": 16000
+    },
+    {
+      "id": "BA-17",
+      "name": "BA-17 · Revisar reportes en el panel operativo",
+      "desc": "**Caso de uso.** El operador abre el panel, filtra avisos, revisa una ficha y modifica su estado o prioridad. También puede revisar la predicción asociada.\n\n\n**Evidencia.** `/dashboard` y `PATCH /api/reports/{id}`. La verificación de permisos por rol queda en BA-25.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-4"
+      ],
+      "idChecklists": [
+        "checklist-BA-17"
+      ],
+      "pos": 17000
+    },
+    {
+      "id": "BA-18",
+      "name": "BA-18 · Validar o fusionar categorías sugeridas",
+      "desc": "**Caso de uso.** El operador revisa las categorías pendientes y decide aprobar una o fusionarla con una existente.\n\n\n**Evidencia.** `/api/admin/categories` y pruebas de categorías y transacciones.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-4"
+      ],
+      "idChecklists": [
+        "checklist-BA-18"
+      ],
+      "pos": 18000
+    },
+    {
+      "id": "BA-19",
+      "name": "BA-19 · Registrar feedback y preparar reentrenamiento",
+      "desc": "**Caso de uso.** El operador confirma una predicción o indica la clase correcta. Mantenimiento puede exportar el feedback y ejecutar el entrenamiento incremental con ejemplos históricos.\n\n\n**Evidencia.** `FeedbackService`, `ml/training/incremental.py` y `backend/scripts/retrain.py`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-5"
+      ],
+      "idChecklists": [
+        "checklist-BA-19"
+      ],
+      "pos": 19000
+    },
+    {
+      "id": "BA-20",
+      "name": "BA-20 · Organizar backend, frontend y modelos",
+      "desc": "**Caso de prueba.** Se sigue una publicación desde la vista al controlador, al servicio y al DAO. Se reemplaza el predictor por un doble de prueba.\n\n\n**Evidencia.** Guía de arquitectura (`ARQUITECTURA.md`) y `backend/tests/test_architecture.py`.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-6"
+      ],
+      "idChecklists": [
+        "checklist-BA-20"
+      ],
+      "pos": 20000
+    },
+    {
+      "id": "BA-21",
+      "name": "BA-21 · Migrar, iniciar y comprobar el sistema",
+      "desc": "**Caso de prueba.** Mantenimiento prepara una base de desarrollo, aplica migraciones, levanta el servicio y ejecuta los tests. También verifica una base previa con datos.\n\n\n**Evidencia.** `make migrate`, `make test-python`, `npm run test:ci` en `frontend`, `backend/tests/test_migrations.py`. En la revisión del tablero pasaron 54 pruebas de Python y 4 de frontend.",
+      "idList": "list-2",
+      "idLabels": [
+        "label-6",
+        "label-7"
+      ],
+      "idChecklists": [
+        "checklist-BA-21"
+      ],
+      "pos": 21000
+    },
+    {
+      "id": "BA-22",
+      "name": "BA-22 · Entrenar y evaluar el clasificador multimodal",
+      "desc": "**Caso de prueba.** Comparar modelos de imagen, texto y multimodal con sus conjuntos reservados. Separar métricas de categoría de métricas de identificación.\n\n\n**Resultado registrado.** 58/60 aciertos (96,7 %) y F1 macro 94,2 % en el conjunto del experimento. Se identificó reutilización de descripciones entre entrenamiento y prueba. Hace falta una prueba más representativa con reportes locales.",
+      "idList": "list-3",
+      "idLabels": [
+        "label-5"
+      ],
+      "idChecklists": [
+        "checklist-BA-22"
+      ],
+      "pos": 1000
+    },
+    {
+      "id": "BA-23",
+      "name": "BA-23 · Comparar ViT y DINOv2 para identificación",
+      "desc": "**Caso de prueba.** Buscar un perro con una foto de hallazgo contra avisos de pérdida de una o varias fotos. Incluir perros ausentes y comparar fotos completas con recortes.\n\n\n**Resultado registrado.** En DogReID, con hasta tres fotos de referencia, DINOv2 pasó del 20,2 % del ViT anterior al 42,9 % de aciertos entre los cinco primeros antes del umbral. Se conservan los experimentos con DogFaceNet, DogReID y MPDD. Resultados y comandos (`COTEJO_VISUAL.md`)",
+      "idList": "list-3",
+      "idLabels": [
+        "label-5",
+        "label-2"
+      ],
+      "idChecklists": [
+        "checklist-BA-23"
+      ],
+      "pos": 2000
+    },
+    {
+      "id": "BA-24",
+      "name": "BA-24 · Versionar el dataset y reentrenar con recorte",
+      "desc": "**Caso de prueba.** Crear un manifiesto por perro y escena, revisar un lote piloto de pelaje y comparar foto completa frente a recorte automático.\n\n\n**Resultado registrado.** Se procesaron 7.805 fotos públicas, con 3.090 para entrenamiento y 24 perros etiquetados en el piloto de pelaje. Con recorte y hasta tres fotos, el umbral calibrado dio 84,8 % de precisión en MPDD y 35,0 % en DogReID. Informe (`../ml/checkpoints/pet_reid/dinov2-v2.json`)",
+      "idList": "list-3",
+      "idLabels": [
+        "label-5"
+      ],
+      "idChecklists": [
+        "checklist-BA-24"
+      ],
+      "pos": 3000
+    },
+    {
+      "id": "BA-25",
+      "name": "BA-25 · Verificar permisos, sesión y contacto real",
+      "desc": "**Caso de prueba.** Comparar solicitudes de un visitante, un vecino autenticado y un administrador. Escanear una credencial de prueba y revisar a quién dirige el contacto.\n\n\n**Hallazgo.** Hay rutas operativas que hoy comprueban sesión sin verificar el rol. La vista QR contiene un número fijo y las pantallas que abren el comparador omiten su token de sesión.",
+      "idList": "list-4",
+      "idLabels": [
+        "label-4",
+        "label-3"
+      ],
+      "idChecklists": [
+        "checklist-BA-25"
+      ],
+      "pos": 1000
+    },
+    {
+      "id": "BA-26",
+      "name": "BA-26 · Reunir y verificar una muestra local",
+      "desc": "**Caso de prueba.** Preparar un lote con fotos de un mismo perro en distintas sesiones, perros mestizos parecidos y búsquedas sin pareja.\n\n\n**Referencia.** Guía de etiquetado (`ETIQUETADO_COTEJO.md`) y plan de reentrenamiento (`PLAN_REENTRENAMIENTO_DINOV2.md`).",
+      "idList": "list-4",
+      "idLabels": [
+        "label-5",
+        "label-7"
+      ],
+      "idChecklists": [
+        "checklist-BA-26"
+      ],
+      "pos": 2000
+    },
+    {
+      "id": "BA-27",
+      "name": "BA-27 · Validar 80 % de precisión y decidir activación",
+      "desc": "**Caso de prueba.** En una galería representativa se simula un hallazgo con una foto y sin datos descriptivos. Se evalúan pérdidas de una y varias fotos e identidades que no tienen un reporte compatible.\n\n\n**Dependencia.** BA-26. El checkpoint actual queda experimental.",
+      "idList": "list-4",
+      "idLabels": [
+        "label-5",
+        "label-7"
+      ],
+      "idChecklists": [
+        "checklist-BA-27"
+      ],
+      "pos": 3000
+    },
+    {
+      "id": "BA-28",
+      "name": "BA-28 · Validar el flujo completo con navegador y PostgreSQL",
+      "desc": "**Caso de prueba.** Ejecutar la demo con una base de prueba y un navegador. Registrar cuenta, publicar un hallazgo, consultar el cotejo, cerrar un aviso, crear una ficha REMUM y escanear su QR.",
+      "idList": "list-4",
+      "idLabels": [
+        "label-7"
+      ],
+      "idChecklists": [
+        "checklist-BA-28"
+      ],
+      "pos": 4000
+    }
+  ],
+  "checklists": [
+    {
+      "id": "checklist-BA-00",
+      "idCard": "BA-00",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La presentación distingue clasificación del reporte, similitud visual entre animales y confirmación humana del reencuentro.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "La presentación identifica qué está implementado, qué se probó en experimentos y qué falta validar.",
+          "state": "incomplete",
+          "pos": 2000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-01",
+      "idCard": "BA-01",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Las credenciales válidas permiten iniciar sesión y consultar la identidad autenticada.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Una credencial inválida no crea una sesión y un correo ya registrado no crea otra cuenta con ese correo.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "La aplicación permite cerrar sesión.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-02",
+      "idCard": "BA-02",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El formulario exige una foto y muestra su vista previa.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Un hallazgo con foto y sin nombre, raza ni color puede publicarse.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Tras guardar, se muestra la confirmación. Si falla la publicación, se informa el error.",
+          "state": "incomplete",
+          "pos": 3000
+        },
+        {
+          "name": "El reporte queda disponible para consultarlo en la cartelera.",
+          "state": "incomplete",
+          "pos": 4000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-03",
+      "idCard": "BA-03",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Se admite una foto principal y hasta tres adicionales.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "La API rechaza una solicitud que supera el límite y devuelve las fotos asociadas al reporte creado.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Un aviso anterior de una sola foto sigue disponible.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-04",
+      "idCard": "BA-04",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La cartelera muestra los reportes guardados y permite filtrar las vistas que ofrece la aplicación.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "El mapa representa los reportes con coordenadas disponibles.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "La ficha muestra la foto y los datos publicados del aviso.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-05",
+      "idCard": "BA-05",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El formulario permite solicitar la ubicación y editar la dirección.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Si el GPS falla o se deniega, se libera el estado de búsqueda y el formulario sigue utilizable.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El reporte conserva la dirección y las coordenadas enviadas.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-06",
+      "idCard": "BA-06",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La API acepta foto y texto y devuelve los resultados del análisis cuando el predictor está disponible.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "La publicación registra la clase y el puntaje de la predicción cuando corresponde.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Una falla de análisis informa el error y no deja una foto guardada por esa solicitud fallida.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-07",
+      "idCard": "BA-07",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La búsqueda excluye el propio reporte y los reportes resueltos.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Puede comparar dos avisos del mismo tipo elegible y puede funcionar si faltan nombre, raza, color o ubicación.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Devuelve hasta seis candidatos y una lista vacía cuando ninguno supera el filtro.",
+          "state": "incomplete",
+          "pos": 3000
+        },
+        {
+          "name": "Los vectores experimentales solo se comparan si corresponden a la misma versión.",
+          "state": "incomplete",
+          "pos": 4000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-08",
+      "idCard": "BA-08",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Alejo y Kinoto quedan fuera con el mínimo provisional de 35 % del cotejo anterior.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Cercanía y señas descriptivas solo ayudan a ordenar candidatos admitidos.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Un candidato con evidencia visual suficiente puede aparecer aunque falten datos descriptivos.",
+          "state": "incomplete",
+          "pos": 3000
+        },
+        {
+          "name": "La configuración distingue el umbral del cotejo anterior y el umbral del checkpoint versionado.",
+          "state": "incomplete",
+          "pos": 4000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-09",
+      "idCard": "BA-09",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Negro frente a dorado, marrón o blanco se descarta si ambas descripciones son claras y no comparten color.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Negro y negro con manchas blancas, color ausente o texto ambiguo siguen al cotejo por foto.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "La coincidencia en «mestizo» no cambia el descarte.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-10",
+      "idCard": "BA-10",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El comparador muestra un porcentaje de similitud visual y presenta las sugerencias como posibles coincidencias.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Si la respuesta identifica una foto adicional como el mejor par, se muestra esa foto.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "La vista muestra «Todavía no encontramos coincidencias visuales» tras una búsqueda exitosa sin candidatos.",
+          "state": "incomplete",
+          "pos": 3000
+        },
+        {
+          "name": "Se ofrece contacto por WhatsApp cuando el reporte trae un teléfono.",
+          "state": "incomplete",
+          "pos": 4000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-11",
+      "idCard": "BA-11",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Una resolución exitosa devuelve el estado resuelto.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "El aviso resuelto deja de ser candidato de nuevas búsquedas.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Si el servicio rechaza la actualización, el comparador informa el error.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-12",
+      "idCard": "BA-12",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La ficha creada queda vinculada al usuario correspondiente y trae un código QR único.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "El listado personal muestra las fichas del usuario autenticado.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Se conservan las coordenadas si el registro las incluye.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-13",
+      "idCard": "BA-13",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Un código registrado abre su ficha pública.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Un código inexistente devuelve un resultado de ficha no encontrada.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Se puede comprobar el flujo en el navegador con una credencial de prueba.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-14",
+      "idCard": "BA-14",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El listado comunitario devuelve las fichas marcadas como comunitarias.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "La API registra eventos de salud asociados a una ficha válida.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Agregar padrinos requiere sesión y se rechaza en fichas no comunitarias.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-15",
+      "idCard": "BA-15",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La ficha y el reporte quedan actualizados en una misma transacción.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Una persona ajena al registro, sin rol administrador, no puede emitir la alerta.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Si se deniega la solicitud, no se crea un reporte ni se cambia el estado de la ficha.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-16",
+      "idCard": "BA-16",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El formulario permite publicar el tipo «alerta de cebo».",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "La API de alertas activas devuelve únicamente alertas de cebo no resueltas.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "La pantalla SOS enlaza al formulario de alerta y ofrece un recurso de denuncia imprimible.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-17",
+      "idCard": "BA-17",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El panel muestra avisos con estado y prioridad.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Los cambios guardados se ven al volver a consultar el aviso.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Una actualización rechazada se informa en pantalla.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-18",
+      "idCard": "BA-18",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La aprobación actualiza la categoría y su estado de verificación.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "La fusión reasigna los reportes y combina los centroides compatibles.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Si falla la fusión, los cambios se revierten como una sola operación.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-19",
+      "idCard": "BA-19",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El feedback queda asociado a la predicción y una corrección posterior actualiza el registro.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Se pueden exportar los datos para el entrenamiento incremental.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El comando admite una prueba sin entrenamiento y marca el feedback procesado después de guardar un checkpoint.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-20",
+      "idCard": "BA-20",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El backend separa entidades, controladores, servicios, DAO e integraciones.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Nuevo reporte separa vista, controlador de formulario y servicio de publicación.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El módulo ML mantiene entrenamiento e inferencia independientes del backend.",
+          "state": "incomplete",
+          "pos": 3000
+        },
+        {
+          "name": "Se pueden probar servicios con dependencias inyectadas y revertir escrituras ante errores.",
+          "state": "incomplete",
+          "pos": 4000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-21",
+      "idCard": "BA-21",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Alembic puede inicializar una base vacía y preservar reportes al adoptar una base anterior.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "El endpoint de salud informa disponibilidad de la API y del modelo.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Las pruebas cubren login, publicación, coincidencias, filtros, REMUM y transacciones según el alcance del repositorio.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-22",
+      "idCard": "BA-22",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Quedan guardados configuración, checkpoints y métricas de evaluación.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Se informa el tamaño de la prueba junto con accuracy y F1 macro.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El resultado de clasificación se comunica como desempeño del experimento sobre ese conjunto.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-23",
+      "idCard": "BA-23",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El entrenamiento y la prueba separan identidades.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Se informan aciertos entre los cinco primeros, precisión de sugerencias y falsos avisos por separado.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El checkpoint experimental puede cargarse y probarse con datos temporales.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-24",
+      "idCard": "BA-24",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "El manifiesto separa entrenamiento, validación y prueba, y rechaza cruces de identidad o duplicados exactos entre roles.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "El predictor reproduce el preprocesamiento de la variante exportada.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El informe distingue qué conjunto usó cada umbral y documenta cuántos datos locales y de pelaje se incorporaron.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-25",
+      "idCard": "BA-25",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Se define quién puede actualizar reportes y administrar categorías.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Las rutas operativas aplican el permiso correspondiente en el backend y se prueba el rechazo de un usuario sin autorización.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El contacto de la ficha QR usa el destino autorizado de esa ficha. Si falta un contacto, la pantalla presenta el estado correspondiente.",
+          "state": "incomplete",
+          "pos": 3000
+        },
+        {
+          "name": "El comparador recibe la sesión de un usuario autenticado desde sus pantallas de entrada y permite completar la confirmación cuando tiene permiso.",
+          "state": "incomplete",
+          "pos": 4000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-26",
+      "idCard": "BA-26",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Cada foto local tiene autorización y una identidad revisada.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "La prueba local queda reservada antes de entrenar y no comparte perros con entrenamiento.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El lote documenta los casos de pelaje parecido, misma raza y sesiones distintas.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-27",
+      "idCard": "BA-27",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "Se acuerdan el tamaño mínimo de muestra y el piso de cobertura antes de abrir la prueba.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Al menos 80 % de las sugerencias mostradas son del perro correcto en la prueba local reservada, para cada modalidad que se habilite.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "El informe incluye conteos, recuperación, cobertura y falsos avisos. Un sistema que no muestra sugerencias no puede aprobar.",
+          "state": "incomplete",
+          "pos": 3000
+        },
+        {
+          "name": "Si el checkpoint cumple, se verifica reindexación y reversión con una base temporal antes de activarlo por defecto.",
+          "state": "incomplete",
+          "pos": 4000
+        }
+      ]
+    },
+    {
+      "id": "checklist-BA-28",
+      "idCard": "BA-28",
+      "name": "Criterios de aceptación",
+      "checkItems": [
+        {
+          "name": "La migración y la demo se verifican sobre PostgreSQL con datos de prueba.",
+          "state": "incomplete",
+          "pos": 1000
+        },
+        {
+          "name": "Se registran resultados esperados y observados por paso, incluyendo un caso sin coincidencias y una operación rechazada.",
+          "state": "incomplete",
+          "pos": 2000
+        },
+        {
+          "name": "Cada hallazgo de la demo se enlaza a su tarjeta de seguimiento.",
+          "state": "incomplete",
+          "pos": 3000
+        }
+      ]
+    }
+  ]
+}

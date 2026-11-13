@@ -1,0 +1,109 @@
+{
+  "frozen": {
+    "1": {
+      "dogreid": {
+        "recall_at_5": 0.2736434042453766,
+        "top5_at_threshold": 0.058914728462696075,
+        "false_alert_rate": 0.09067579358816147,
+        "threshold": 0.6358959674835205
+      },
+      "mpdd": {
+        "recall_at_5": 0.9811320900917053,
+        "top5_at_threshold": 0.6792452931404114,
+        "false_alert_rate": 0.23529411852359772,
+        "threshold": 0.6358959674835205
+      }
+    },
+    "3": {
+      "dogreid": {
+        "recall_at_5": 0.3240309953689575,
+        "top5_at_threshold": 0.07751937955617905,
+        "false_alert_rate": 0.14627887308597565,
+        "threshold": 0.643691897392273
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.9056603908538818,
+        "false_alert_rate": 0.2549019753932953,
+        "threshold": 0.643691897392273
+      }
+    },
+    "4": {
+      "dogreid": {
+        "recall_at_5": 0.3232558071613312,
+        "top5_at_threshold": 0.07829457521438599,
+        "false_alert_rate": 0.15141145884990692,
+        "threshold": 0.643691897392273
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.9433962106704712,
+        "false_alert_rate": 0.2549019753932953,
+        "threshold": 0.643691897392273
+      }
+    }
+  },
+  "trained": {
+    "1": {
+      "dogreid": {
+        "recall_at_5": 0.3635658919811249,
+        "top5_at_threshold": 0.08372092992067337,
+        "false_alert_rate": 0.0923866555094719,
+        "threshold": 0.7219120264053345
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.7169811129570007,
+        "false_alert_rate": 0.05882352963089943,
+        "threshold": 0.7219120264053345
+      }
+    },
+    "3": {
+      "dogreid": {
+        "recall_at_5": 0.4294573664665222,
+        "top5_at_threshold": 0.11472868174314499,
+        "false_alert_rate": 0.11804961413145065,
+        "threshold": 0.7314863204956055
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.8679245114326477,
+        "false_alert_rate": 0.13725490868091583,
+        "threshold": 0.7314863204956055
+      }
+    },
+    "4": {
+      "dogreid": {
+        "recall_at_5": 0.43023255467414856,
+        "top5_at_threshold": 0.11627907305955887,
+        "false_alert_rate": 0.12318220734596252,
+        "threshold": 0.7314863204956055
+      },
+      "mpdd": {
+        "recall_at_5": 1.0,
+        "top5_at_threshold": 0.9433962106704712,
+        "false_alert_rate": 0.1568627506494522,
+        "threshold": 0.7314863204956055
+      }
+    }
+  },
+  "subgroups": {
+    "same_dog": {
+      "pairs": 3221,
+      "above_threshold": 218
+    },
+    "same_breed_different_dog": {
+      "pairs": 13436,
+      "above_threshold": 114
+    },
+    "different_breed": {
+      "pairs": 1921762,
+      "above_threshold": 392
+    }
+  },
+  "training": {
+    "photos": 3090,
+    "dogs": 625,
+    "coat_labels": 0
+  }
+}

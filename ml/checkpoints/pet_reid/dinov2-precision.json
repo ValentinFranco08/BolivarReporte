@@ -1,0 +1,125 @@
+{
+  "checkpoint": "pet-reid-3374d2c76c5f980d",
+  "minimum_precision": 0.8,
+  "min_suggestions": 20,
+  "top_k": 6,
+  "photo_counts": {
+    "1": {
+      "checkpoint_threshold": {
+        "validation": {
+          "recall_at_5": 0.6274510025978088,
+          "top5_at_threshold": 0.06862745434045792,
+          "false_alert_rate": 0.044843047857284546,
+          "threshold": 0.7219120264053345,
+          "precision": 0.45161290322580644,
+          "suggestions": 31,
+          "correct_suggestions": 14,
+          "query_coverage": 0.06791569292545319,
+          "queries_with_match": 204
+        },
+        "dogreid": {
+          "recall_at_5": 0.3635658919811249,
+          "top5_at_threshold": 0.08372092992067337,
+          "false_alert_rate": 0.0923866555094719,
+          "threshold": 0.7219120264053345,
+          "precision": 0.25,
+          "suggestions": 432,
+          "correct_suggestions": 108,
+          "query_coverage": 0.13501423597335815,
+          "queries_with_match": 1290
+        },
+        "mpdd": {
+          "recall_at_5": 1.0,
+          "top5_at_threshold": 0.7169811129570007,
+          "false_alert_rate": 0.05882352963089943,
+          "threshold": 0.7219120264053345,
+          "precision": 0.6129032258064516,
+          "suggestions": 62,
+          "correct_suggestions": 38,
+          "query_coverage": 0.4134615361690521,
+          "queries_with_match": 53
+        }
+      },
+      "calibrated": null,
+      "passes": false
+    },
+    "3": {
+      "checkpoint_threshold": {
+        "validation": {
+          "recall_at_5": 0.6127451062202454,
+          "top5_at_threshold": 0.12254901975393295,
+          "false_alert_rate": 0.05829596519470215,
+          "threshold": 0.7219120264053345,
+          "precision": 0.5319148936170213,
+          "suggestions": 47,
+          "correct_suggestions": 25,
+          "query_coverage": 0.10304449498653412,
+          "queries_with_match": 204
+        },
+        "dogreid": {
+          "recall_at_5": 0.4294573664665222,
+          "top5_at_threshold": 0.12868216633796692,
+          "false_alert_rate": 0.15568862855434418,
+          "threshold": 0.7219120264053345,
+          "precision": 0.1983273596176822,
+          "suggestions": 837,
+          "correct_suggestions": 166,
+          "query_coverage": 0.21268808841705322,
+          "queries_with_match": 1290
+        },
+        "mpdd": {
+          "recall_at_5": 1.0,
+          "top5_at_threshold": 0.8867924809455872,
+          "false_alert_rate": 0.1568627506494522,
+          "threshold": 0.7219120264053345,
+          "precision": 0.47959183673469385,
+          "suggestions": 98,
+          "correct_suggestions": 47,
+          "query_coverage": 0.5384615659713745,
+          "queries_with_match": 53
+        }
+      },
+      "calibrated": null,
+      "passes": false
+    },
+    "4": {
+      "checkpoint_threshold": {
+        "validation": {
+          "recall_at_5": 0.6127451062202454,
+          "top5_at_threshold": 0.12254901975393295,
+          "false_alert_rate": 0.05829596519470215,
+          "threshold": 0.7219120264053345,
+          "precision": 0.5319148936170213,
+          "suggestions": 47,
+          "correct_suggestions": 25,
+          "query_coverage": 0.10304449498653412,
+          "queries_with_match": 204
+        },
+        "dogreid": {
+          "recall_at_5": 0.43023255467414856,
+          "top5_at_threshold": 0.1302325576543808,
+          "false_alert_rate": 0.1633875072002411,
+          "threshold": 0.7219120264053345,
+          "precision": 0.19399538106235567,
+          "suggestions": 866,
+          "correct_suggestions": 168,
+          "query_coverage": 0.21756811439990997,
+          "queries_with_match": 1290
+        },
+        "mpdd": {
+          "recall_at_5": 1.0,
+          "top5_at_threshold": 0.9622641801834106,
+          "false_alert_rate": 0.1764705926179886,
+          "threshold": 0.7219120264053345,
+          "precision": 0.4766355140186916,
+          "suggestions": 107,
+          "correct_suggestions": 51,
+          "query_coverage": 0.5865384340286255,
+          "queries_with_match": 53
+        }
+      },
+      "calibrated": null,
+      "passes": false
+    }
+  }
+}

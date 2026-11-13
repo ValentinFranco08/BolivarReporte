@@ -1,0 +1,25 @@
+DOG_ID	COAT	SECONDARY	PATTERN	PARTITION	SOURCE
+2d7206b2-481f-433d-b853-72a326746d42	negro	marron	bicolor	train	DogReID-1553
+0b3067ba-9e32-41ad-930e-a2197832345d	marron	negro	bicolor	train	DogReID-1553
+6e27108f-f179-4e41-9681-9f0e8f03e563	marron		solido	train	DogReID-1553
+5fece7f7-14a9-41e4-a95e-fd09fb811e54	marron	blanco	bicolor	train	DogReID-1553
+56615f08-8bef-4bf9-ba75-d415e5273113	marron		solido	train	DogReID-1553
+36cdd3e8-0f49-478b-85eb-bbf1c865d0f3	gris	blanco	bicolor	train	DogReID-1553
+2989478b-49d3-4987-aa2c-32459677bf85	marron		solido	train	DogReID-1553
+e234f589-1aeb-435d-a765-e49ebbe5a292	negro	blanco	manchas	train	DogReID-1553
+145759aa-5b75-4058-a8bd-0e1bbdde08ab	negro		solido	val	DogReID-1553
+9d040ff3-fb14-4fbb-a871-4930931fd4ec	blanco	negro	manchas	val	DogReID-1553
+70aa5b73-a629-4835-8025-3af2eaf097d7	blanco		solido	val	DogReID-1553
+0328c4c1-5987-4e73-b5ef-fb0195efee76	marron		solido	val	DogReID-1553
+02ad7461-dffb-476e-a812-4f894be8920b	marron	blanco	bicolor	val	DogReID-1553
+3c5b993c-e844-4b97-a4b2-d950a9fd4c75	marron	negro	moteado	val	DogReID-1553
+3d75e2dc-5d32-4cda-bf98-d5c84817fe29	blanco	negro	manchas	val	DogReID-1553
+81e6b45d-4e71-4146-8b9f-01edbfd5864a	blanco		solido	val	DogReID-1553
+cc8319d2-dc79-418d-863c-6b8e126de86a	blanco		solido	test	DogReID-1553
+08024a1c-2d1e-4d3e-81fb-51fe27e99952	marron	blanco	bicolor	test	DogReID-1553
+bd17b8b7-1213-4df8-bf1d-b1d62cd44243	negro		solido	test	DogReID-1553
+4442ddfd-ba4b-4f40-8d94-915a88fcd96a	negro	blanco	bicolor	test	DogReID-1553
+f67494e1-74a6-46ab-8415-32e45ecea8dd	negro		solido	test	DogReID-1553
+e0553a69-3fca-42ce-8bbc-6ab784b7169c	marron	negro	atigrado	test	DogReID-1553
+f0c616ae-083f-40a8-9459-c363733e0eaa	blanco	negro	manchas	test	DogReID-1553
+b77934ec-ae8d-4b88-9804-d4ca0d925707	crema		solido	test	DogReID-1553

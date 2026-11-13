@@ -3,6 +3,7 @@ import json
 from .. import models
 from ..security.credentials import get_password_hash
 from ml.taxonomy import SEED_CATEGORIES
+from .matching import MatchingPolicy
 
 class BootstrapService:
     def __init__(self, categories, users, predictions, unit_of_work):
@@ -35,7 +36,7 @@ class ReindexService:
         self.storage = storage
         self.unit_of_work = unit_of_work
 
-    def run(self):
+    def run(self, legacy=False):
         updated = 0
         with self.unit_of_work:
             for report in self.reports.with_images():
@@ -43,12 +44,29 @@ class ReindexService:
                     vector = json.loads(report.embedding or "null")
                 except ValueError:
                     vector = None
-                if isinstance(vector, list) and len(vector) == 768:
+                identity = (not legacy and getattr(self.predictor, "pet_reid_enabled", False) is True
+                            and report.pet_type == models.PetType.PERRO
+                            and report.report_type in MatchingPolicy.SEARCHABLE_TYPES)
+                if not identity and (isinstance(vector, list) and len(vector) == 768
+                                     or isinstance(vector, dict) and not legacy):
                     continue
                 try:
                     image = self.storage.read(report.image_path)
                 except FileNotFoundError:
                     continue
-                report.embedding = json.dumps(self.predictor.extract_pet_embedding(image))
-                updated += 1
+                try:
+                    result = (self.predictor.pet_identity_embedding(image) if identity
+                              else self.predictor.extract_pet_embedding(image))
+                except OSError:
+                    continue
+                if result:
+                    report.embedding = json.dumps(result)
+                    if identity:
+                        for photo in report.additional_photos:
+                            try:
+                                extra = self.predictor.pet_identity_embedding(self.storage.read(photo.image_path))
+                            except OSError:
+                                continue
+                            photo.embedding = json.dumps(extra)
+                    updated += 1
         return updated

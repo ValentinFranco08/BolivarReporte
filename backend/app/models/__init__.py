@@ -3,7 +3,7 @@
 from .enums import UserRole, ReportStatus, ReportPriority, AnimalReportType, PetType, PetHealthStatus, RemumStatus, HealthEventType
 from .users import User
 from .remum import RemumRecord, RemumHealthEvent, RemumGodparent
-from .reports import Category, Report
+from .reports import Category, Report, ReportPhoto
 from .predictions import ModelVersion, AIPrediction, Feedback
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "RemumGodparent",
     "Category",
     "Report",
+    "ReportPhoto",
     "ModelVersion",
     "AIPrediction",
     "Feedback",

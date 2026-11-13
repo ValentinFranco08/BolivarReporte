@@ -2,8 +2,10 @@
 from threading import RLock
 
 class LazyPredictor:
-    def __init__(self, factory=None):
+    def __init__(self, factory=None, pet_checkpoint=None):
         self._factory = factory
+        self._pet_checkpoint = pet_checkpoint
+        self._pet_predictor = None
         self._instance = None
         self._lock = RLock()
 
@@ -32,6 +34,17 @@ class LazyPredictor:
     def extract_pet_embedding(self, image_bytes):
         with self._lock:
             return self.initialize().extract_pet_embedding(image_bytes)
+
+    @property
+    def pet_reid_enabled(self):
+        return bool(self._pet_checkpoint)
+
+    def pet_identity_embedding(self, image_bytes):
+        with self._lock:
+            if self._pet_predictor is None:
+                from ml.inference.pet_predictor import PetPredictor
+                self._pet_predictor = PetPredictor(self._pet_checkpoint)
+            return self._pet_predictor.embed(image_bytes)
 
     def extract_embedding(self, image_bytes, text):
         with self._lock:

@@ -20,8 +20,8 @@ def create_report(submission: schemas.ReportSubmission, service=Depends(get_repo
 @router.get("/api/reports/{report_id}/matches", response_model=schemas.PetMatchResponse)
 def get_report_matches(report_id: int, service=Depends(get_report_service),
                        matching=Depends(get_matching_service)):
-    matches = matching.find(service.get(report_id), top_k=6)
-    return {"matches": matches, "total_checked": len(matches)}
+    matches, review = matching.find(service.get(report_id), top_k=6)
+    return {"matches": matches, "review_candidates": review, "total_checked": len(matches)}
 
 @router.get("/api/alerts/active", response_model=list[schemas.ReportResponse])
 def get_active_alerts(service=Depends(get_report_service)):

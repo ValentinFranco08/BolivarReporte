@@ -40,6 +40,8 @@ Hoy en día, cuando una mascota se pierde o se rescata a un animal en la vía p�
 
 ## 🧠 Arquitectura de la Inteligencia Artificial
 
+[Entrenamiento y evaluación del cotejo visual por identidad](docs/COTEJO_VISUAL.md).
+
 Para que un vecino de a pie no tenga que completar formularios técnicos complejos, la plataforma cuenta con un modelo multimodal unificado propio (**`BolivarMultimodalModel`**, ~218,6 Millones de parámetros) entrenado para interpretar conjuntamente **la foto del animal y la descripción en español**:
 
 ```text
